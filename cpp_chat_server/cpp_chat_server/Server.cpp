@@ -1,7 +1,9 @@
 
 #include <iostream>
-#include <winsock2.h>
+#ifdef _WIN32
+#include <Winsock2.h>
 #include <ws2tcpip.h>
+#endif
 
 #pragma comment(lib, "Ws2_32.lib")
 #define DEFAULT_PORT "27015"
