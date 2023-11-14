@@ -1,5 +1,9 @@
 
 #include <iostream>
+#include <map>
+#include "utils.h"
+#include "Configs.h"
+#include "Networking.h"
 #ifdef _WIN32
 #include <Winsock2.h>
 #include <thread>
@@ -8,16 +12,43 @@
 #endif
 
 #pragma comment(lib, "Ws2_32.lib")
-#define DEFAULT_PORT "27015"
-#define DEFAULT_BUFLEN 512
 
 using namespace std;
+
+
+class SocketsList
+{
+public:
+	SocketsList() {
+
+	}
+	
+	~SocketsList() {
+
+	}
+
+	static map<string, p2p_socket_data> connections;
+
+private:
+
+};
 
 void Messaging(SOCKET ClientSocket) {
 	char recvbuf[DEFAULT_BUFLEN];
 	int iSendResult;
 	int recvbuflen = DEFAULT_BUFLEN;
 	int iResult = 0;
+	p2p_socket_data new_data = p2p_socket_data();
+
+	iResult = Handshake(ClientSocket, new_data);
+
+	if (iResult) {
+		cout << Handshake_errors[iResult] << endl;
+		closesocket(ClientSocket);
+		return;
+	}
+
+//	SocketsList::connections[] = new_data;
 
 	// Receive until the peer shuts down the connection
 	do {
@@ -118,25 +149,23 @@ int main()
 	vector<thread> threads;
 	while (true) {
 		// Accept a client socket
-		ClientSocket = accept(ListenSocket, NULL, NULL);
+		sockaddr_in addr = { 0 };
+		int addrlen = (int)sizeof(sockaddr_in);
+		ClientSocket = accept(ListenSocket, (sockaddr *) &addr, &addrlen);
 		if (ClientSocket == INVALID_SOCKET) {
 			printf("accept failed: %d\n", WSAGetLastError());
 			continue;
+		}
+
+		char ip[INET_ADDRSTRLEN];
+		if (inet_ntop(addr.sin_family, &addr.sin_addr, ip, INET_ADDRSTRLEN) != NULL) {
+			cout << ip << endl;
 		}
 
 		threads.push_back(thread(Messaging, ClientSocket));
 	}
 
 	cout << "Finishing program...\n";
-
-	// shutdown the send half of the connection since no more data will be sent
-	iResult = shutdown(ClientSocket, SD_SEND);
-	if (iResult == SOCKET_ERROR) {
-		printf("shutdown failed: %d\n", WSAGetLastError());
-		closesocket(ClientSocket);
-		WSACleanup();
-		return 1;
-	}
 
 	// cleanup
 	closesocket(ListenSocket);
