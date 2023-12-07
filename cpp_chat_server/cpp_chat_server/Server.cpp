@@ -2,38 +2,40 @@
 #include <iostream>
 #include <map>
 #include "utils.h"
-#include "Configs.h"
 #include "Networking.h"
+#include "SharedConfigs.h"
 #ifdef _WIN32
 #include <Winsock2.h>
 #include <thread>
 #include <vector>
 #include <ws2tcpip.h>
+
 #endif
 
 #pragma comment(lib, "Ws2_32.lib")
 
 using namespace std;
 
-
 class SocketsList
 {
 public:
 	SocketsList() {
-
+		connections = map<string, p2p_socket_data>();
 	}
 	
 	~SocketsList() {
 
 	}
 
-	static map<string, p2p_socket_data> connections;
+	map<string, p2p_socket_data> connections;
 
 private:
 
 };
+SocketsList sockets_list = SocketsList();
 
-void Messaging(SOCKET ClientSocket) {
+
+void Messaging(SOCKET ClientSocket, string client_ip) {
 	char recvbuf[DEFAULT_BUFLEN];
 	int iSendResult;
 	int recvbuflen = DEFAULT_BUFLEN;
@@ -48,14 +50,14 @@ void Messaging(SOCKET ClientSocket) {
 		return;
 	}
 
-//	SocketsList::connections[] = new_data;
+	sockets_list.connections[client_ip] = new_data;
 
 	// Receive until the peer shuts down the connection
 	do {
 		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0) {
-			printf("Bytes received: %d\n", iResult);
-			printf("Message: %.*s\n", iResult, recvbuf);
+//			printf("Bytes received: %d\n", iResult);
+//			printf("Message: %.*s\n", iResult, recvbuf);
 
 			// Echo the buffer back to the sender
 			iSendResult = send(ClientSocket, recvbuf, iResult, 0);
@@ -64,7 +66,7 @@ void Messaging(SOCKET ClientSocket) {
 				closesocket(ClientSocket);
 				return;
 			}
-			printf("Bytes sent: %d\n", iSendResult);
+			//printf("Bytes sent: %d\n", iSendResult);
 		}
 		else if (iResult == 0)
 			printf("Connection closing...\n");
@@ -162,7 +164,7 @@ int main()
 			cout << ip << endl;
 		}
 
-		threads.push_back(thread(Messaging, ClientSocket));
+		threads.push_back(thread(Messaging, ClientSocket, (string)ip));
 	}
 
 	cout << "Finishing program...\n";

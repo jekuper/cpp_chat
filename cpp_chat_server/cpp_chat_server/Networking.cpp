@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 #include "utils.h"
-#include "Configs.h"
+#include "SharedConfigs.h"
 #include <iostream>
 
 using namespace std;
@@ -30,9 +30,6 @@ int Handshake(SOCKET ClientSocket, p2p_socket_data& result) {
 	iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
 	if (iResult > 0) {
 		vector<string> splitted = split(recvbuf, iResult, '|');
-
-		for (auto e : splitted)
-			cout << e << endl;
 
 		if (splitted.size() != 3) {
 			return 3;
