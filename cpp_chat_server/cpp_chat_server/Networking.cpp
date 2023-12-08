@@ -20,7 +20,7 @@ void p2p_socket_data::load_handshake(SOCKET _socket, vector<string> handshake) {
 	is_host = (handshake[2] == "");
 }
 
-const string Handshake_errors[] = {"OK", "Empty handshake", "Unknown error", "Wrong handhake format", "Different version"};
+const string Handshake_errors[] = {"OK", "Empty handshake", "Unknown error", "Wrong handshake format", "Different version"};
 int Handshake(SOCKET ClientSocket, p2p_socket_data& result) {
 	char recvbuf[DEFAULT_BUFLEN];
 	int iSendResult;
@@ -47,4 +47,20 @@ int Handshake(SOCKET ClientSocket, p2p_socket_data& result) {
 	else {
 		return 2;
 	}
+}
+
+int send (SOCKET s, const string message, int flags) {
+	return send(s, message.c_str(), message.size(), flags);
+}
+int send_and_handle(SOCKET s, const string message, int flags) {
+	return send_and_handle(s, message.c_str(), message.size(), flags);
+}
+
+int send_and_handle(SOCKET s, const char* message, int len, int flags) {
+	int iSendResult = send(s, message, len, flags);
+	if (iSendResult == SOCKET_ERROR) {
+		printf("send failed: %d\n", WSAGetLastError());
+		closesocket(s);
+	}
+	return iSendResult;
 }

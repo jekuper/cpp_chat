@@ -27,6 +27,19 @@ public:
 
 	}
 
+	void Add (string ip, p2p_socket_data data) {
+		connections[ip] = data;
+	}
+	void Remove (string ip) {
+		connections.erase(ip);
+	}
+	p2p_socket_data Get (string ip) {
+		return connections[ip];
+	}
+	bool Exists(string ip) {
+		return connections.find(ip) != connections.end();
+	}
+
 	map<string, p2p_socket_data> connections;
 
 private:
@@ -50,23 +63,17 @@ void Messaging(SOCKET ClientSocket, string client_ip) {
 		return;
 	}
 
-	sockets_list.connections[client_ip] = new_data;
+	sockets_list.Add(client_ip, new_data);
 
-	// Receive until the peer shuts down the connection
 	do {
 		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0) {
-//			printf("Bytes received: %d\n", iResult);
-//			printf("Message: %.*s\n", iResult, recvbuf);
-
-			// Echo the buffer back to the sender
-			iSendResult = send(ClientSocket, recvbuf, iResult, 0);
-			if (iSendResult == SOCKET_ERROR) {
-				printf("send failed: %d\n", WSAGetLastError());
-				closesocket(ClientSocket);
-				return;
+			if (sockets_list.Exists(new_data.target_ip)) {
+				send_and_handle(sockets_list.Get(new_data.target_ip).socket, recvbuf, iResult, 0);
 			}
-			//printf("Bytes sent: %d\n", iSendResult);
+			else {
+				iSendResult = send_and_handle(ClientSocket, "--Target is offline.\n", 0);
+			}
 		}
 		else if (iResult == 0)
 			printf("Connection closing...\n");
@@ -78,6 +85,7 @@ void Messaging(SOCKET ClientSocket, string client_ip) {
 
 	} while (iResult > 0);
 
+	sockets_list.Remove(client_ip);
 	closesocket(ClientSocket);
 	return;
 }
@@ -88,7 +96,6 @@ int main()
 
 	int iResult;
 
-	// Initialize Winsock
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
 		printf("WSAStartup failed: %d\n", iResult);
@@ -103,7 +110,6 @@ int main()
 	hints.ai_protocol = IPPROTO_TCP;
 	hints.ai_flags = AI_PASSIVE;
 
-	// get address information
 	iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
 	if (iResult != 0) {
 		printf("getaddrinfo failed %d\n", iResult);
@@ -111,7 +117,6 @@ int main()
 		return 1;
 	}
 
-	// creating socket
 	SOCKET ListenSocket = INVALID_SOCKET;
 
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
@@ -123,7 +128,6 @@ int main()
 		return 1;
 	}
 
-	// Setup the TCP listening socket
 	iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
 	if (iResult == SOCKET_ERROR) {
 		printf("bind failed with error: %d\n", WSAGetLastError());
@@ -146,11 +150,10 @@ int main()
 	ClientSocket = INVALID_SOCKET;
 
 
-	// accepting and creating threads for clients
 	cout << "Starting accepting connections:\n";
+	//TODO: implement deletion from threads array
 	vector<thread> threads;
 	while (true) {
-		// Accept a client socket
 		sockaddr_in addr = { 0 };
 		int addrlen = (int)sizeof(sockaddr_in);
 		ClientSocket = accept(ListenSocket, (sockaddr *) &addr, &addrlen);
@@ -169,7 +172,6 @@ int main()
 
 	cout << "Finishing program...\n";
 
-	// cleanup
 	closesocket(ListenSocket);
 	WSACleanup();
 
