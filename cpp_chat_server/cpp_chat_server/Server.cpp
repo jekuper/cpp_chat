@@ -63,6 +63,13 @@ void Messaging(SOCKET ClientSocket, string client_ip) {
 		return;
 	}
 
+	if (sockets_list.Exists(client_ip)) {
+		cout << client_ip << " denied due to prior existance\n";
+		int send_code = send_and_handle(ClientSocket, "Denied.\nYour ip is already connected to server.", 0);
+		if (send_code == 0)
+			closesocket(ClientSocket);
+		return;
+	}
 	sockets_list.Add(client_ip, new_data);
 
 	do {
