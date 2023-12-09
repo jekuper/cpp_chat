@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "SharedConfigs.h"
 #include <iostream>
+#include <map>
 
 using namespace std;
 
@@ -18,6 +19,25 @@ void p2p_socket_data::load_handshake(SOCKET _socket, vector<string> handshake) {
 	username = handshake[1];
 	target_ip = handshake[2];
 	is_host = (handshake[2] == "");
+}
+
+SocketsList::SocketsList() {
+	connections = map<string, p2p_socket_data>();
+}
+
+SocketsList::~SocketsList() { }
+
+void SocketsList::Add(string ip, p2p_socket_data data) {
+	connections[ip] = data;
+}
+void SocketsList::Remove(string ip) {
+	connections.erase(ip);
+}
+p2p_socket_data SocketsList::Get(string ip) {
+	return connections[ip];
+}
+bool SocketsList::Exists(string ip) {
+	return connections.find(ip) != connections.end();
 }
 
 const string Handshake_errors[] = {"OK", "Empty handshake", "Unknown error", "Wrong handshake format", "Different version"};
@@ -49,9 +69,11 @@ int Handshake(SOCKET ClientSocket, p2p_socket_data& result) {
 	}
 }
 
+
 int send (SOCKET s, const string message, int flags) {
 	return send(s, message.c_str(), message.size(), flags);
 }
+
 int send_and_handle(SOCKET s, const string message, int flags) {
 	return send_and_handle(s, message.c_str(), message.size(), flags);
 }

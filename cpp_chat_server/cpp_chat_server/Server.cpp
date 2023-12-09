@@ -16,35 +16,6 @@
 
 using namespace std;
 
-class SocketsList
-{
-public:
-	SocketsList() {
-		connections = map<string, p2p_socket_data>();
-	}
-	
-	~SocketsList() {
-
-	}
-
-	void Add (string ip, p2p_socket_data data) {
-		connections[ip] = data;
-	}
-	void Remove (string ip) {
-		connections.erase(ip);
-	}
-	p2p_socket_data Get (string ip) {
-		return connections[ip];
-	}
-	bool Exists(string ip) {
-		return connections.find(ip) != connections.end();
-	}
-
-	map<string, p2p_socket_data> connections;
-
-private:
-
-};
 SocketsList sockets_list = SocketsList();
 
 
@@ -53,9 +24,9 @@ void Messaging(SOCKET ClientSocket, string client_ip) {
 	int iSendResult;
 	int recvbuflen = DEFAULT_BUFLEN;
 	int iResult = 0;
-	p2p_socket_data new_data = p2p_socket_data();
+	p2p_socket_data client_data = p2p_socket_data();
 
-	iResult = Handshake(ClientSocket, new_data);
+	iResult = Handshake(ClientSocket, client_data);
 
 	if (iResult) {
 		cout << Handshake_errors[iResult] << endl;
@@ -70,13 +41,13 @@ void Messaging(SOCKET ClientSocket, string client_ip) {
 			closesocket(ClientSocket);
 		return;
 	}
-	sockets_list.Add(client_ip, new_data);
+	sockets_list.Add(client_ip, client_data);
 
 	do {
 		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0) {
-			if (sockets_list.Exists(new_data.target_ip)) {
-				send_and_handle(sockets_list.Get(new_data.target_ip).socket, recvbuf, iResult, 0);
+			if (sockets_list.Exists(client_data.target_ip)) {
+				send_and_handle(sockets_list.Get(client_data.target_ip).socket, recvbuf, iResult, 0);
 			}
 			else {
 				iSendResult = send_and_handle(ClientSocket, "--Target is offline.\n", 0);
