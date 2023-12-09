@@ -19,14 +19,14 @@ using namespace std;
 SocketsList sockets_list = SocketsList();
 
 
-void Messaging(SOCKET ClientSocket, string client_ip) {
+void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 	char recvbuf[DEFAULT_BUFLEN];
 	int iSendResult;
 	int recvbuflen = DEFAULT_BUFLEN;
 	int iResult = 0;
 	p2p_socket_data client_data = p2p_socket_data();
 
-	iResult = Handshake(ClientSocket, client_data);
+	iResult = Handshake(ClientSocket, client_data, addr, addr_len);
 
 	if (iResult) {
 		cout << Handshake_errors[iResult] << endl;
@@ -34,20 +34,15 @@ void Messaging(SOCKET ClientSocket, string client_ip) {
 		return;
 	}
 
-	if (sockets_list.Exists(client_ip)) {
-		cout << client_ip << " denied due to prior existance\n";
-		int send_code = send_and_handle(ClientSocket, "Denied.\nYour ip is already connected to server.", 0);
-		if (send_code == 0)
-			closesocket(ClientSocket);
-		return;
-	}
-	sockets_list.Add(client_ip, client_data);
+	cout << "Starting messaging with: " << client_data.get_ip() << endl;
+
+	sockets_list.Add_client(client_data);
 
 	do {
 		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0) {
-			if (sockets_list.Exists(client_data.target_ip)) {
-				send_and_handle(sockets_list.Get(client_data.target_ip).socket, recvbuf, iResult, 0);
+			if (sockets_list.Target_listens(client_data)) {
+				send_and_handle(sockets_list.Get_target(client_data).socket, recvbuf, iResult, 0);
 			}
 			else {
 				iSendResult = send_and_handle(ClientSocket, "--Target is offline.\n", 0);
@@ -63,7 +58,7 @@ void Messaging(SOCKET ClientSocket, string client_ip) {
 
 	} while (iResult > 0);
 
-	sockets_list.Remove(client_ip);
+	sockets_list.Remove_client(client_data.get_ip());
 	closesocket(ClientSocket);
 	return;
 }
@@ -134,18 +129,14 @@ int main()
 	while (true) {
 		sockaddr_in addr = { 0 };
 		int addrlen = (int)sizeof(sockaddr_in);
+
 		ClientSocket = accept(ListenSocket, (sockaddr *) &addr, &addrlen);
 		if (ClientSocket == INVALID_SOCKET) {
 			printf("accept failed: %d\n", WSAGetLastError());
 			continue;
 		}
 
-		char ip[INET_ADDRSTRLEN];
-		if (inet_ntop(addr.sin_family, &addr.sin_addr, ip, INET_ADDRSTRLEN) != NULL) {
-			cout << ip << endl;
-		}
-
-		threads.push_back(thread(Messaging, ClientSocket, (string)ip));
+		threads.push_back(thread(Messaging, ClientSocket, addr, addrlen));
 	}
 
 	cout << "Finishing program...\n";

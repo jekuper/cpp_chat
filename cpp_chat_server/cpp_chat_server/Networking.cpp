@@ -5,43 +5,81 @@
 #include "SharedConfigs.h"
 #include <iostream>
 #include <map>
+#include <ws2tcpip.h>
 
 using namespace std;
 
 p2p_socket_data::p2p_socket_data() {
 	socket = INVALID_SOCKET;
-	is_host = true;
+	addr = { 0 };
+	addr_len = (int)sizeof(sockaddr_in);
+
 	target_ip = "";
 	username = "?";
 }
-void p2p_socket_data::load_handshake(SOCKET _socket, vector<string> handshake) {
+void p2p_socket_data::load(SOCKET _socket, vector<string> handshake, sockaddr_in _addr, int _addr_len) {
 	socket = _socket;
+	addr = _addr;
+	addr_len = _addr_len;
+
 	username = handshake[1];
 	target_ip = handshake[2];
-	is_host = (handshake[2] == "");
+}
+string p2p_socket_data::get_ip() {
+	char ip[INET_ADDRSTRLEN];
+	if (inet_ntop(addr.sin_family, &addr.sin_addr, ip, INET_ADDRSTRLEN) != NULL) {
+		return ip;
+	}
 }
 
 SocketsList::SocketsList() {
-	connections = map<string, p2p_socket_data>();
+	connections = map<string, vector<p2p_socket_data>>();
 }
 
 SocketsList::~SocketsList() { }
 
-void SocketsList::Add(string ip, p2p_socket_data data) {
-	connections[ip] = data;
+void SocketsList::Add_client(p2p_socket_data data) {
+	connections[data.target_ip].push_back(data);
 }
-void SocketsList::Remove(string ip) {
+void SocketsList::Remove_client(string ip) {
+	for (auto e : connections[ip]) {
+		string listener_ip = e.get_ip();
+
+		for (auto it = connections[listener_ip].begin(); it != connections[listener_ip].end(); ) {
+			if (it->get_ip() == ip) {
+				it = connections[listener_ip].erase(it);
+			}
+			else {
+				++it;
+			}
+		}
+	}
+
 	connections.erase(ip);
 }
-p2p_socket_data SocketsList::Get(string ip) {
-	return connections[ip];
+bool SocketsList::Target_listens(p2p_socket_data data) {
+	string sender_ip = data.get_ip();
+	
+	for (auto it = connections[sender_ip].begin(); it != connections[sender_ip].end(); ++it) {
+		if (it->get_ip() == data.target_ip) {
+			return true;
+		}
+	}
+	return false;
 }
-bool SocketsList::Exists(string ip) {
-	return connections.find(ip) != connections.end();
+p2p_socket_data SocketsList::Get_target(p2p_socket_data	data) {
+	string sender_ip = data.get_ip();
+
+	for (auto it = connections[sender_ip].begin(); it != connections[sender_ip].end(); ++it) {
+		if (it->get_ip() == data.target_ip) {
+			return *it;
+		}
+	}
+	throw invalid_argument("Target is not listening!");
 }
 
 const string Handshake_errors[] = {"OK", "Empty handshake", "Unknown error", "Wrong handshake format", "Different version"};
-int Handshake(SOCKET ClientSocket, p2p_socket_data& result) {
+int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, int addr_len) {
 	char recvbuf[DEFAULT_BUFLEN];
 	int iSendResult;
 	int recvbuflen = DEFAULT_BUFLEN;
@@ -58,7 +96,7 @@ int Handshake(SOCKET ClientSocket, p2p_socket_data& result) {
 			return 4;
 		}
 
-		result.load_handshake(ClientSocket, splitted);
+		result.load(ClientSocket, splitted, addr, addr_len);
 
 		return 0;
 	}

@@ -14,4 +14,4 @@ std::vector<std::string> split(const char* s, int len, char delimiter);
 ///<summary>Trims string by \r\n\t characters from both ends</summary>
 ///<param name="s">string to trim</param>
 ///<returns>new trimmed string</returns>
-std::string trim(const std::string& str);
+void trim_str(std::string& str);

@@ -9,26 +9,30 @@ using namespace std;
 class p2p_socket_data {
 public:
 	SOCKET socket;
+
+	sockaddr_in addr;
+	int addr_len;
+
 	string target_ip;
 	string username;
-	bool is_host;
 
 	p2p_socket_data();
-	void load_handshake(SOCKET _socket, vector<string> handshake);
+	void load(SOCKET _socket, vector<string> handshake, sockaddr_in _addr, int _addr_len);
+	string get_ip();
 private:
 };
 
 ///<summary>holds all connections to server and their data</summary>
 class SocketsList {
 public:
-	map<string, p2p_socket_data> connections;
+	map<string, vector<p2p_socket_data>> connections;
 
 	SocketsList();
 	~SocketsList();
-	void Add(string ip, p2p_socket_data data);
-	void Remove(string ip);
-	p2p_socket_data Get(string ip);
-	bool Exists(string ip);
+	void Add_client(p2p_socket_data data);
+	void Remove_client(string ip);
+	bool Target_listens(p2p_socket_data data);
+	p2p_socket_data Get_target(p2p_socket_data data);
 private:
 };
 
@@ -39,7 +43,7 @@ extern const string Handshake_errors[];
 /// <param name="ClientSocket">the socket associated with client</param>
 /// <param name="result">variable to put result in</param>
 /// <returns>error code</returns>
-int Handshake(SOCKET ClientSocket, p2p_socket_data& result);
+int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, int addr_len);
 
 /// <summary>Wraper function for sending string over socket</summary>
 /// <param name="s">socket for sending</param>
