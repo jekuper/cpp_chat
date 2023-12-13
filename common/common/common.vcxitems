@@ -17,4 +17,7 @@
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)SharedConfigs.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(MSBuildThisFileDirectory)SharedConfigs.cpp" />
+  </ItemGroup>
 </Project>
