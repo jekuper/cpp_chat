@@ -117,7 +117,7 @@ int send_and_handle(SOCKET s, const std::string message, int flags) {
 int send_and_handle(SOCKET s, const char* message, int len, int flags) {
 	int iSendResult = send(s, message, len, flags);
 	if (iSendResult == SOCKET_ERROR) {
-		printf("send failed: %d\n", WSAGetLastError());
+		std::cout << "send failed: " << WSAGetLastError() << "\n";
 		closesocket(s);
 	}
 	return iSendResult;

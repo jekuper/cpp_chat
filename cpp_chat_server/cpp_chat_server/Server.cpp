@@ -47,9 +47,9 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 			}
 		}
 		else if (iResult == 0)
-			printf("Connection closing...\n");
+			std::cout << "Connection closing...\n";
 		else {
-			printf("recv failed: %d\n", WSAGetLastError());
+			std::cout << "recv failed: " << WSAGetLastError() << "\n";
 			closesocket(ClientSocket);
 			return;
 		}
@@ -69,7 +69,7 @@ int main()
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
-		printf("WSAStartup failed: %d\n", iResult);
+		std::cout << "WSAStartup failed: " << iResult << "\n";
 		return 1;
 	}
 
@@ -83,7 +83,7 @@ int main()
 
 	iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
 	if (iResult != 0) {
-		printf("getaddrinfo failed %d\n", iResult);
+		std::cout << "Getaddrinfo failed with error: " << iResult;
 		WSACleanup();
 		return 1;
 	}
@@ -93,7 +93,7 @@ int main()
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 
 	if (ListenSocket == INVALID_SOCKET) {
-		printf("Error at socket(): %ld\n", WSAGetLastError());
+		std::cout << "Error at socket(): " << WSAGetLastError() << "\n";
 		freeaddrinfo(result);
 		WSACleanup();
 		return 1;
@@ -101,7 +101,7 @@ int main()
 
 	iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
 	if (iResult == SOCKET_ERROR) {
-		printf("bind failed with error: %d\n", WSAGetLastError());
+		std::cout << "bind failed with error: " << WSAGetLastError() << "\n";
 		freeaddrinfo(result);
 		closesocket(ListenSocket);
 		WSACleanup();
@@ -111,7 +111,7 @@ int main()
 	freeaddrinfo(result);
 
 	if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR) {
-		printf("Listen failed with error: %ld\n", WSAGetLastError());
+		std::cout << "Listen failed with error: " << WSAGetLastError() << "\n";
 		closesocket(ListenSocket);
 		WSACleanup();
 		return 1;
@@ -130,7 +130,7 @@ int main()
 
 		ClientSocket = accept(ListenSocket, (sockaddr *) &addr, &addrlen);
 		if (ClientSocket == INVALID_SOCKET) {
-			printf("accept failed: %d\n", WSAGetLastError());
+			std::cout << "accept failed: " << WSAGetLastError() << "\n";
 			continue;
 		}
 
