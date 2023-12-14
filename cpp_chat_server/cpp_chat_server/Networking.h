@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <map>
-using namespace std;
 
 ///<summary>holds all data about peer connection</summary>
 class p2p_socket_data {
@@ -13,31 +12,31 @@ public:
 	sockaddr_in addr;
 	int addr_len;
 
-	string target_ip;
-	string username;
+	std::string target_ip;
+	std::string username;
 
 	p2p_socket_data();
-	void load(SOCKET _socket, vector<string> handshake, sockaddr_in _addr, int _addr_len);
-	string get_ip();
+	void load(SOCKET _socket, std::vector<std::string> handshake, sockaddr_in _addr, int _addr_len);
+	std::string get_ip();
 private:
 };
 
 ///<summary>holds all connections to server and their data</summary>
 class SocketsList {
 public:
-	map<string, vector<p2p_socket_data>> connections;
+	std::map<std::string, std::vector<p2p_socket_data>> connections;
 
 	SocketsList();
 	~SocketsList();
 	void Add_client(p2p_socket_data data);
-	void Remove_client(string ip);
+	void Remove_client(std::string ip);
 	bool Target_listens(p2p_socket_data data);
 	p2p_socket_data Get_target(p2p_socket_data data);
 private:
 };
 
 /// <summary> holds associated string description for each handshake error code</summary>
-extern const string Handshake_errors[];
+extern const std::string Handshake_errors[];
 
 /// <summary>Handshake used to check version compatablilty and receive nicknames</summary>
 /// <param name="ClientSocket">the socket associated with client</param>
@@ -50,7 +49,7 @@ int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, in
 /// <param name="message">string message</param>
 /// <param name="flags">flags</param>
 /// <returns>error code</returns>
-int send(SOCKET s, const string message, int flags);
+int send(SOCKET s, const std::string message, int flags);
 
 
 /// <summary>Wraper function for sending string over socket</summary>
@@ -58,7 +57,7 @@ int send(SOCKET s, const string message, int flags);
 /// <param name="message">string message</param>
 /// <param name="flags">flags</param>
 /// <returns>error code</returns>
-int send_and_handle(SOCKET s, const string message, int flags);
+int send_and_handle(SOCKET s, const std::string message, int flags);
 
 
 /// <summary>Wraper function for sending string over socket</summary>

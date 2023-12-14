@@ -1,12 +1,10 @@
 #include "utils.h"
 
-using namespace std;
-
 std::vector<std::string> split(const char* s, int len, char delimiter)
 {
-	vector<string> result = vector<string>();
+	std::vector<std::string> result = std::vector<std::string>();
 
-	string buf = "";
+	std::string buf = "";
 	for (int i = 0; i < len; i++) {
 		if (s[i] == delimiter) {
 			trim_str(buf);
@@ -23,7 +21,7 @@ std::vector<std::string> split(const char* s, int len, char delimiter)
 	return result;
 }
 
-void trim_str(string& str) {
+void trim_str(std::string& str) {
 	size_t start = str.find_first_not_of(" \t\n\r");
 
 	if (start == std::string::npos) {

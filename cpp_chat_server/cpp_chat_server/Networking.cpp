@@ -7,8 +7,6 @@
 #include <map>
 #include <ws2tcpip.h>
 
-using namespace std;
-
 p2p_socket_data::p2p_socket_data() {
 	socket = INVALID_SOCKET;
 	addr = { 0 };
@@ -17,7 +15,7 @@ p2p_socket_data::p2p_socket_data() {
 	target_ip = "";
 	username = "?";
 }
-void p2p_socket_data::load(SOCKET _socket, vector<string> handshake, sockaddr_in _addr, int _addr_len) {
+void p2p_socket_data::load(SOCKET _socket, std::vector<std::string> handshake, sockaddr_in _addr, int _addr_len) {
 	socket = _socket;
 	addr = _addr;
 	addr_len = _addr_len;
@@ -25,7 +23,7 @@ void p2p_socket_data::load(SOCKET _socket, vector<string> handshake, sockaddr_in
 	username = handshake[1];
 	target_ip = handshake[2];
 }
-string p2p_socket_data::get_ip() {
+std::string p2p_socket_data::get_ip() {
 	char ip[INET_ADDRSTRLEN];
 	if (inet_ntop(addr.sin_family, &addr.sin_addr, ip, INET_ADDRSTRLEN) != NULL) {
 		return ip;
@@ -33,7 +31,7 @@ string p2p_socket_data::get_ip() {
 }
 
 SocketsList::SocketsList() {
-	connections = map<string, vector<p2p_socket_data>>();
+	connections = std::map<std::string, std::vector<p2p_socket_data>>();
 }
 
 SocketsList::~SocketsList() { }
@@ -41,9 +39,9 @@ SocketsList::~SocketsList() { }
 void SocketsList::Add_client(p2p_socket_data data) {
 	connections[data.target_ip].push_back(data);
 }
-void SocketsList::Remove_client(string ip) {
+void SocketsList::Remove_client(std::string ip) {
 	for (auto e : connections[ip]) {
-		string listener_ip = e.get_ip();
+		std::string listener_ip = e.get_ip();
 
 		for (auto it = connections[listener_ip].begin(); it != connections[listener_ip].end(); ) {
 			if (it->get_ip() == ip) {
@@ -58,7 +56,7 @@ void SocketsList::Remove_client(string ip) {
 	connections.erase(ip);
 }
 bool SocketsList::Target_listens(p2p_socket_data data) {
-	string sender_ip = data.get_ip();
+	std::string sender_ip = data.get_ip();
 	
 	for (auto it = connections[sender_ip].begin(); it != connections[sender_ip].end(); ++it) {
 		if (it->get_ip() == data.target_ip) {
@@ -68,17 +66,17 @@ bool SocketsList::Target_listens(p2p_socket_data data) {
 	return false;
 }
 p2p_socket_data SocketsList::Get_target(p2p_socket_data	data) {
-	string sender_ip = data.get_ip();
+	std::string sender_ip = data.get_ip();
 
 	for (auto it = connections[sender_ip].begin(); it != connections[sender_ip].end(); ++it) {
 		if (it->get_ip() == data.target_ip) {
 			return *it;
 		}
 	}
-	throw invalid_argument("Target is not listening!");
+	throw std::invalid_argument("Target is not listening!");
 }
 
-const string Handshake_errors[] = {"OK", "Empty handshake", "Unknown error", "Wrong handshake format", "Different version"};
+const std::string Handshake_errors[] = {"OK handshake", "Empty handshake", "Socket error during handshake", "Wrong handshake format", "Version mismatch during handshake"};
 int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, int addr_len) {
 	char recvbuf[DEFAULT_BUFLEN];
 	int iSendResult;
@@ -87,7 +85,7 @@ int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, in
 
 	iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
 	if (iResult > 0) {
-		vector<string> splitted = split(recvbuf, iResult, '|');
+		std::vector<std::string> splitted = split(recvbuf, iResult, '|');
 
 		if (splitted.size() != 3) {
 			return 3;
@@ -102,17 +100,17 @@ int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, in
 	}
 	else if (iResult == 0)
 		return 1;
-	else {
+	else if (iResult == SOCKET_ERROR) {
 		return 2;
 	}
 }
 
 
-int send (SOCKET s, const string message, int flags) {
+int send (SOCKET s, const std::string message, int flags) {
 	return send(s, message.c_str(), message.size(), flags);
 }
 
-int send_and_handle(SOCKET s, const string message, int flags) {
+int send_and_handle(SOCKET s, const std::string message, int flags) {
 	return send_and_handle(s, message.c_str(), message.size(), flags);
 }
 

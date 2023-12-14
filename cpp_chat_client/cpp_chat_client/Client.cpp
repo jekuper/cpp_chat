@@ -17,8 +17,9 @@ public:
 	}
 };
 
-const char* Generate_handshake(auth_data data) {
-	return (VERSION + "|" + data.name + "|" + data.target_ip).c_str();
+const std::string Generate_handshake(auth_data data) {
+	const std::string res = (VERSION + "|" + data.name + "|" + data.target_ip);
+	return res;
 }
 
 int Connect_IP (SOCKET &Server_socket, const char* ip, const addrinfo hints, auth_data data) {
@@ -58,8 +59,9 @@ int Connect_IP (SOCKET &Server_socket, const char* ip, const addrinfo hints, aut
 		return 1;
 	}
 
-	const char* handshake = Generate_handshake(data);
-	iResult = send(Server_socket, handshake, (int)strlen(handshake), 0);
+	const std::string handshake = Generate_handshake(data);
+	std::cout << "sending handshake: \n  " << handshake << "\n";
+	iResult = send(Server_socket, handshake.c_str(), (int)strlen(handshake.c_str()), 0);
 
 	if (iResult == SOCKET_ERROR) {
 		std::cout << "failed sending message: " << WSAGetLastError() << "\n";
@@ -68,10 +70,14 @@ int Connect_IP (SOCKET &Server_socket, const char* ip, const addrinfo hints, aut
 	}
 
 	std::cout << "Connected to " << ip << "\n";
+	return 0;
 }
 
 int main(int argc, char* argv[]) {
-	auto argk = shared::Get_keyword_arguments(argc, argv);
+	std::map<std::string, std::string> argk = shared::Get_keyword_arguments(argc, argv);
+	if (!shared::validate_arguments(argk)) {
+		return 1;
+	}
 
 	WSADATA wsaData;
 
@@ -94,7 +100,7 @@ int main(int argc, char* argv[]) {
 
 
 	SOCKET Server_socket = INVALID_SOCKET;
-	iResult = Connect_IP (Server_socket, argv[1], hints, auth_data(argk["name"], argk["server"]));
+	iResult = Connect_IP (Server_socket, argk["server"].c_str(), hints, auth_data(argk["name"], argk["target"]));
 	if (iResult != 0) {
 		WSACleanup();
 		return iResult;
@@ -116,6 +122,8 @@ int main(int argc, char* argv[]) {
 			std::cout << "Recv failed with error: " << WSAGetLastError() << "\n";
 
 	} while (iResult > 0);
+
+	std::cout << "finishing...\n";
 
 	// cleanup
 	closesocket(Server_socket);

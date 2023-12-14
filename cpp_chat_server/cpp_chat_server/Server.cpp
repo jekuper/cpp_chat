@@ -14,8 +14,6 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-using namespace std;
-
 SocketsList sockets_list = SocketsList();
 
 
@@ -29,12 +27,12 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 	iResult = Handshake(ClientSocket, client_data, addr, addr_len);
 
 	if (iResult) {
-		cout << Handshake_errors[iResult] << endl;
+		std::cout << Handshake_errors[iResult] << "\n  WSA error:" << WSAGetLastError() << "\n";
 		closesocket(ClientSocket);
 		return;
 	}
 
-	cout << "Starting messaging with: " << client_data.get_ip() << endl;
+	std::cout << "Starting messaging with: " << client_data.get_ip() << "\n";
 
 	sockets_list.Add_client(client_data);
 
@@ -123,9 +121,9 @@ int main()
 	ClientSocket = INVALID_SOCKET;
 
 
-	cout << "Starting accepting connections:\n";
+	std::cout << "Starting accepting connections:\n";
 	//TODO: implement deletion from threads array
-	vector<thread> threads;
+	std::vector<std::thread> threads;
 	while (true) {
 		sockaddr_in addr = { 0 };
 		int addrlen = (int)sizeof(sockaddr_in);
@@ -136,10 +134,10 @@ int main()
 			continue;
 		}
 
-		threads.push_back(thread(Messaging, ClientSocket, addr, addrlen));
+		threads.push_back(std::thread(Messaging, ClientSocket, addr, addrlen));
 	}
 
-	cout << "Finishing program...\n";
+	std::cout << "Finishing program...\n";
 
 	closesocket(ListenSocket);
 	WSACleanup();
