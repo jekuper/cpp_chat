@@ -5,10 +5,14 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
+///<summary>Wrapper over all client authentication data</summary>
 class auth_data
 {
 public:
+	///<summary>Client nickname</summary>
 	std::string name;
+
+	///<summary>IP of client to which you want to connect</summary>
 	std::string target_ip;
 
 	auth_data(std::string _name, std::string _target_ip) {
@@ -17,11 +21,21 @@ public:
 	}
 };
 
+///<summary>Generates handshake string</summary>
+///<param name="data">client authentication data</param>
+///<returns>string handshake</returns>
 const std::string Generate_handshake(auth_data data) {
 	const std::string res = (VERSION + "|" + data.name + "|" + data.target_ip);
 	return res;
 }
 
+
+///<summary>Connects to socket and performs handshake</summary>
+///<param name="Server_socket">variable where new socket will be placed</param>
+///<param name="ip">ip to connect to</param>
+///<param name="hints">connection configuration</param>
+///<param name="data">client authentication data</param>
+///<returns>Error code or 0 if no error</returns>
 int Connect_IP (SOCKET &Server_socket, const char* ip, const addrinfo hints, auth_data data) {
 	addrinfo* result = NULL;
 	addrinfo* ptr = NULL;
