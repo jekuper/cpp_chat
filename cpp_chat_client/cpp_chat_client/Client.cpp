@@ -2,6 +2,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include "SharedConfigs.h"
+#include <thread>
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -87,6 +88,70 @@ int Connect_IP (SOCKET &Server_socket, const char* ip, const addrinfo hints, aut
 	return 0;
 }
 
+int Display (SOCKET Server_socket) {
+	int iResult;
+	FreeConsole();
+	iResult = AllocConsole();
+	std::cout << GetCurrentProcessId();
+
+	FILE* newStdin, * newStdout, * newStderr;
+	// Redirect standard input, output, and error streams to the new console window
+	if (freopen_s(&newStdin, "CONIN$", "r", stdin) != 0) {
+		std::cerr << "Failed to redirect stdin in the new console." << std::endl;
+	}
+
+	// Redirect stdout
+	if (freopen_s(&newStdout, "CONOUT$", "w", stdout) != 0) {
+		std::cerr << "Failed to redirect stdout in the new console." << std::endl;
+	}
+
+	// Redirect stderr
+	if (freopen_s(&newStderr, "CONOUT$", "w", stderr) != 0) {
+		std::cerr << "Failed to redirect stderr in the new console." << std::endl;
+	}
+
+	char recvbuf[DEFAULT_BUFLEN];
+	int recvbuflen = DEFAULT_BUFLEN;
+
+	std::cout << "Listening to messages:\n";
+
+	do {
+
+		iResult = recv(Server_socket, recvbuf, recvbuflen, 0);
+		if (iResult > 0) {
+			std::cout << std::string(recvbuf, iResult) << "\n";
+		}
+		else if (iResult == 0)
+			std::cout << "Connection closed\n";
+		else
+			std::cout << "Recv failed with error: " << WSAGetLastError() << "\n";
+
+	} while (iResult > 0);
+	return 0;
+}
+int Input(SOCKET Server_socket) {
+	int iResult = 0;
+	std::cout << GetCurrentProcessId();
+	std::cout << "your text here: ";
+	while (true) {
+		std::string input;
+		std::cin >> input;
+
+		iResult = send(Server_socket, input.c_str(), input.size(), 0);
+
+		if (iResult == SOCKET_ERROR) {
+			std::cout << "send failed: " << WSAGetLastError() << "\n";
+			return iResult;
+		}
+	}
+	return 0;
+}
+
+void Separate_console(SOCKET Server_socket) {
+	std::thread displayThread(Display, Server_socket);
+	Input(Server_socket);
+}
+
 int main(int argc, char* argv[]) {
 	std::map<std::string, std::string> argk = shared::Get_keyword_arguments(argc, argv);
 	if (!shared::validate_arguments(argk)) {
@@ -120,22 +185,7 @@ int main(int argc, char* argv[]) {
 		return iResult;
 	}
 
-
-	char recvbuf[DEFAULT_BUFLEN];
-	int recvbuflen = DEFAULT_BUFLEN;
-	do {
-
-		iResult = recv(Server_socket, recvbuf, recvbuflen, 0);
-		if (iResult > 0) {
-			std::cout << "Bytes received: " << iResult << "\n";
-			std::cout << "Message: " << std::string(recvbuf, iResult) << "\n";
-		}
-		else if (iResult == 0)
-			std::cout << "Connection closed\n";
-		else
-			std::cout << "Recv failed with error: " << WSAGetLastError() << "\n";
-
-	} while (iResult > 0);
+	Separate_console(Server_socket);
 
 	std::cout << "finishing...\n";
 
