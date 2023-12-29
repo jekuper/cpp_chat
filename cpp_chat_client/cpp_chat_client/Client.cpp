@@ -3,6 +3,7 @@
 #include <ws2tcpip.h>
 #include "SharedConfigs.h"
 #include <thread>
+#include "Console.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -88,58 +89,54 @@ int Connect_IP (SOCKET &Server_socket, const char* ip, const addrinfo hints, aut
 	return 0;
 }
 
-int Display (SOCKET Server_socket) {
+int Display (SOCKET Server_socket, CustomConsole::Flags& shared) {
 	int iResult;
-	FreeConsole();
-	iResult = AllocConsole();
-	std::cout << GetCurrentProcessId();
-
-	FILE* newStdin, * newStdout, * newStderr;
-	// Redirect standard input, output, and error streams to the new console window
-	if (freopen_s(&newStdin, "CONIN$", "r", stdin) != 0) {
-		std::cerr << "Failed to redirect stdin in the new console." << std::endl;
-	}
-
-	// Redirect stdout
-	if (freopen_s(&newStdout, "CONOUT$", "w", stdout) != 0) {
-		std::cerr << "Failed to redirect stdout in the new console." << std::endl;
-	}
-
-	// Redirect stderr
-	if (freopen_s(&newStderr, "CONOUT$", "w", stderr) != 0) {
-		std::cerr << "Failed to redirect stderr in the new console." << std::endl;
-	}
 
 	char recvbuf[DEFAULT_BUFLEN];
 	int recvbuflen = DEFAULT_BUFLEN;
 
-	std::cout << "Listening to messages:\n";
+	shared.console.write("Listening to messages:");
 
 	do {
+		if (shared.stop)
+			return 0;
 
 		iResult = recv(Server_socket, recvbuf, recvbuflen, 0);
+
+		if (shared.stop)
+			return 0;
+
 		if (iResult > 0) {
-			std::cout << std::string(recvbuf, iResult) << "\n";
+			shared.console.write(std::string(recvbuf, iResult));
 		}
-		else if (iResult == 0)
+		else if (iResult == 0) {
+			shared.stop = true;
 			std::cout << "Connection closed\n";
-		else
+		}
+		else {
+			shared.stop = true;
 			std::cout << "Recv failed with error: " << WSAGetLastError() << "\n";
+		}
 
 	} while (iResult > 0);
 	return 0;
 }
-int Input(SOCKET Server_socket) {
+int Input(SOCKET Server_socket, CustomConsole::Flags& shared) {
 	int iResult = 0;
-	std::cout << GetCurrentProcessId();
-	std::cout << "your text here: ";
 	while (true) {
-		std::string input;
-		std::cin >> input;
+		if (shared.stop) {
+			break;
+		}
+		std::string input = shared.console.read();
+		if (shared.stop) {
+			break;
+		}
 
 		iResult = send(Server_socket, input.c_str(), input.size(), 0);
 
 		if (iResult == SOCKET_ERROR) {
+			shared.stop = true;
+
 			std::cout << "send failed: " << WSAGetLastError() << "\n";
 			return iResult;
 		}
@@ -148,8 +145,12 @@ int Input(SOCKET Server_socket) {
 }
 
 void Separate_console(SOCKET Server_socket) {
-	std::thread displayThread(Display, Server_socket);
-	Input(Server_socket);
+	system("cls");
+
+	CustomConsole::Flags shared;
+
+	std::thread displayThread(Display, Server_socket, std::ref(shared));
+	Input(Server_socket, shared);
 }
 
 int main(int argc, char* argv[]) {
@@ -187,7 +188,7 @@ int main(int argc, char* argv[]) {
 
 	Separate_console(Server_socket);
 
-	std::cout << "finishing...\n";
+	std::cout << "Stopping client...\n";
 
 	// cleanup
 	closesocket(Server_socket);

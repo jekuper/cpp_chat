@@ -32,7 +32,7 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 		return;
 	}
 
-	std::cout << "Starting messaging with: " << client_data.get_ip() << "\n";
+	std::cout << "Starting messaging with: " << client_data.get_ip() << " - " << client_data.username << "\n";
 
 	sockets_list.Add_client(client_data);
 
@@ -47,9 +47,9 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 			}
 		}
 		else if (iResult == 0)
-			std::cout << "Connection closing...\n";
+			std::cout << "Connection closing with " << client_data.get_ip() << " - " << client_data.username << "\n";
 		else {
-			std::cout << "recv failed: " << WSAGetLastError() << "\n";
+			std::cout << "message to " << client_data.get_ip() << " - " << client_data.username << " failed with code " << WSAGetLastError() << "\n";
 			closesocket(ClientSocket);
 			return;
 		}
@@ -134,10 +134,15 @@ int main()
 			continue;
 		}
 
+		char ip[INET_ADDRSTRLEN];
+		inet_ntop(addr.sin_family, &addr.sin_addr, ip, INET_ADDRSTRLEN);
+
+		std::cout << "Established connection to " << ip << ". Waiting for handshake...\n";
+
 		threads.push_back(std::thread(Messaging, ClientSocket, addr, addrlen));
 	}
 
-	std::cout << "Finishing program...\n";
+	std::cout << "Closing server...\n";
 
 	closesocket(ListenSocket);
 	WSACleanup();
