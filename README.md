@@ -6,12 +6,10 @@ This is a simple client-server chat application written in C++ that operates in 
 
 ## Features
 
-- **Echoing messages:** Currently server can only echo messages back to sender. 
+- **P2P chatting:** Clients can connect to a server and communicate with one other specified client.
 
 - **Future Features:**
-  - **Direct Chats with Usernames:** Capability to have private conversations with specific users.
   - **Rooms Handling:** Support for group chats to facilitate communication among multiple users simultaneously.
-  - **Usernames:** Users can set and display unique usernames.
   - **RSA Encryption:** Implementation of RSA encryption for secure communication.
   - **Linux Version:** Adaptation of the application to run on Linux platforms.
   - **Graphical User Interface (GUI):** A graphical interface for a more user-friendly experience.
@@ -19,9 +17,9 @@ This is a simple client-server chat application written in C++ that operates in 
 ## Prerequisites
 
 - **Windows Operating System:** The application is currently developed for Windows using the Winsock2 library.
-- **C++ Compiler:** Ensure you have a C++ compiler installed (e.g., MinGW for Windows).
 
 ## How to Build
+Assuming you have **MSVC C++ Compiler** and **msbuild** available. If not, then install Visual Studio.
 
 1. Clone the repository:
 
@@ -32,42 +30,32 @@ This is a simple client-server chat application written in C++ that operates in 
 2. Compile Server scripts:
 
     ```bash
-    cd cpp_chat_client/cpp_chat_client/
-    g++ server.cpp -o server
+    cd cpp_chat_server
+    msbuild cpp_chat_server.sln /p:Configuration=Release
     ```
 
 3. Compile Client scripts:
 
     ```bash
-    cd cpp_chat_server/cpp_chat_server/
-    g++ client.cpp -o client
+    cd cpp_chat_client
+    msbuild cpp_chat_client.sln /p:Configuration=Release
     ```
-
-## How to Run
-
-### Server
-
-1. Open a terminal and navigate to the project's server directory.
-
-2. Run the server:
+4. Run server:
 
     ```bash
-    ./server
+    cd cpp_chat_server/x64/Release
+    cpp_chat_server.exe
     ```
-
-### Client
-
-1. Open a new terminal and navigate to the project's client directory.
-
-2. Run the client:
+4. Run client:
 
     ```bash
-    ./client
+    cd cpp_chat_client/x64/Release
+    cpp_chat_client.exe
     ```
 
-3. Follow the on-screen prompts to connect to the server and start chatting.
+Refer to [client](cpp_chat_client/README.md) and [server](cpp_chat_server/README.md) documentations for detailed functionality.
 
-## Future Development
+## We ACCEPT new ideas!
 
 Contributions and feature requests are welcome. Here are some areas for potential enhancement:
 
