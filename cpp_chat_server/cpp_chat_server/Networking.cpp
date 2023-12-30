@@ -28,6 +28,7 @@ std::string p2p_socket_data::get_ip() {
 	if (inet_ntop(addr.sin_family, &addr.sin_addr, ip, INET_ADDRSTRLEN) != NULL) {
 		return ip;
 	}
+	return "";
 }
 
 SocketsList::SocketsList() {
@@ -103,6 +104,15 @@ int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, in
 	else if (iResult == SOCKET_ERROR) {
 		return 2;
 	}
+}
+std::string Get_IP (sockaddr_in* addr) {
+	char ip[INET_ADDRSTRLEN];
+	if (inet_ntop(addr->sin_family, &addr->sin_addr, ip, INET_ADDRSTRLEN) == NULL) {
+		std::cerr << "Failed retrieving IP from addr\n";
+		return "";
+	}
+
+	return ip;
 }
 
 

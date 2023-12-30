@@ -44,6 +44,11 @@ extern const std::string Handshake_errors[];
 /// <returns>error code</returns>
 int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, int addr_len);
 
+/// <summary>Converts sockaddr to readable IP</summary>
+/// <param name="addr">the socket address structure</param>
+/// <returns>converted IP. Ex. 127.0.0.1</returns>
+std::string Get_IP(sockaddr_in* addr);
+
 /// <summary>Wraper function for sending string over socket</summary>
 /// <param name="s">socket for sending</param>
 /// <param name="message">string message</param>

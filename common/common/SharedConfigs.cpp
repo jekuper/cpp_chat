@@ -24,15 +24,15 @@ namespace shared {
 	
 	bool validate_arguments(std::map<std::string, std::string> argk) {
 		if (argk["name"].size() == 0) {
-			std::cout << "Invalid name argument.";
+			std::cout << "Username is not provided\nUse --name \"myUserName\"\n";
 			return false;
 		}
 		if (argk["target"].size() == 0) {
-			std::cout << "Invalid target IP.";
+			std::cout << "Target IP is not provided\nUse --target \"127.0.0.1\"\n";
 			return false;
 		}
 		if (argk["server"].size() == 0) {
-			std::cout << "Invalid server IP.";
+			std::cout << "Server IP is not provided\nUse --server \"127.0.0.1\"\n";
 			return false;
 		}
 		return true;

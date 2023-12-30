@@ -70,10 +70,11 @@ int main()
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
 		std::cout << "WSAStartup failed: " << iResult << "\n";
+		system("pause");
 		return 1;
 	}
 
-	addrinfo* result = NULL, * ptr = NULL, hints;
+	addrinfo* result = NULL, hints;
 
 	ZeroMemory(&hints, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -83,9 +84,19 @@ int main()
 
 	iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
 	if (iResult != 0) {
-		std::cout << "Getaddrinfo failed with error: " << iResult;
+		std::cout << "Getaddrinfo failed with error: " << iResult << "\n";
+		system("pause");
 		WSACleanup();
 		return 1;
+	}
+	for (struct addrinfo* ptr = result; ptr != nullptr; ptr = ptr->ai_next) {
+		char ipstr[INET_ADDRSTRLEN];
+		struct sockaddr_in* sockaddr_ipv4 = (struct sockaddr_in*)ptr->ai_addr;
+
+		// Convert the IP address to a human-readable format
+		if (inet_ntop(sockaddr_ipv4->sin_family, &(sockaddr_ipv4->sin_addr), ipstr, sizeof(ipstr)) != nullptr) {
+			std::cout << "Listening on " << ipstr << ":" << DEFAULT_PORT << "\n";
+		}
 	}
 
 	SOCKET ListenSocket = INVALID_SOCKET;
@@ -96,6 +107,7 @@ int main()
 		std::cout << "Error at socket(): " << WSAGetLastError() << "\n";
 		freeaddrinfo(result);
 		WSACleanup();
+		system("pause");
 		return 1;
 	}
 
@@ -105,6 +117,7 @@ int main()
 		freeaddrinfo(result);
 		closesocket(ListenSocket);
 		WSACleanup();
+		system("pause");
 		return 1;
 	}
 
@@ -114,14 +127,13 @@ int main()
 		std::cout << "Listen failed with error: " << WSAGetLastError() << "\n";
 		closesocket(ListenSocket);
 		WSACleanup();
+		system("pause");
 		return 1;
 	}
 
 	SOCKET ClientSocket;
 	ClientSocket = INVALID_SOCKET;
 
-
-	std::cout << "Starting accepting connections:\n";
 	//TODO: implement deletion from threads array
 	std::vector<std::thread> threads;
 	while (true) {
@@ -134,10 +146,7 @@ int main()
 			continue;
 		}
 
-		char ip[INET_ADDRSTRLEN];
-		inet_ntop(addr.sin_family, &addr.sin_addr, ip, INET_ADDRSTRLEN);
-
-		std::cout << "Established connection to " << ip << ". Waiting for handshake...\n";
+		std::cout << "Established connection to " << Get_IP(&addr) << ". Waiting for handshake...\n";
 
 		threads.push_back(std::thread(Messaging, ClientSocket, addr, addrlen));
 	}

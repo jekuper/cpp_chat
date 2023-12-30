@@ -156,6 +156,7 @@ void Separate_console(SOCKET Server_socket) {
 int main(int argc, char* argv[]) {
 	std::map<std::string, std::string> argk = shared::Get_keyword_arguments(argc, argv);
 	if (!shared::validate_arguments(argk)) {
+		system("pause");
 		return 1;
 	}
 
@@ -165,7 +166,8 @@ int main(int argc, char* argv[]) {
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
-		printf("WSAStartup failed: %d\n", iResult);
+		std::cout << "WSAStartup failed with error " << iResult << "\n";
+		system("pause");
 		return 1;
 	}
 
