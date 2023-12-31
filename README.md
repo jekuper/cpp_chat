@@ -27,26 +27,28 @@ Assuming you have **MSVC C++ Compiler** and **msbuild** available. If not, then 
     git clone https://github.com/jekuper/cpp_chat.git
     ```
 
-2. Compile Server scripts:
+2. Open a VS Developer Command Prompt in this directory
+
+3. Compile Server scripts:
 
     ```bash
     cd cpp_chat_server
     msbuild cpp_chat_server.sln /p:Configuration=Release
     ```
 
-3. Compile Client scripts:
+4. Compile Client scripts:
 
     ```bash
     cd cpp_chat_client
     msbuild cpp_chat_client.sln /p:Configuration=Release
     ```
-4. Run server:
+5. Run server:
 
     ```bash
     cd cpp_chat_server/x64/Release
     cpp_chat_server.exe
     ```
-4. Run client:
+6. Run client:
 
     ```bash
     cd cpp_chat_client/x64/Release
