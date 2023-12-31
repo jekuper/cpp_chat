@@ -28,7 +28,7 @@ namespace shared {
 			return false;
 		}
 		if (argk["target"].size() == 0) {
-			std::cout << "Target IP is not provided\nUse --target \"127.0.0.1\"\n";
+			std::cout << "Target Username is not provided\nUse --target \"127.0.0.1\"\n";
 			return false;
 		}
 		if (argk["server"].size() == 0) {

@@ -21,9 +21,9 @@ The client application accepts the following command-line arguments:
 * __Example:__ ``--name Alice``
 
 ### --target (Required)
-* __Description:__ Specifies the target peer's IP address.
-* __Usage:__ ``--target <target_ip>``
-* __Example:__ ``--target 192.168.1.2``
+* __Description:__ Specifies the target peer's username.
+* __Usage:__ ``--target <username>``
+* __Example:__ ``--target Bob``
 ### --server (Required)
 * __Description:__ Specifies the server's IP address.
 * __Usage:__ ``--server <server_ip>``

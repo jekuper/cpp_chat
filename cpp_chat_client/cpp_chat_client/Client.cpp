@@ -15,11 +15,11 @@ public:
 	std::string name;
 
 	///<summary>IP of client to which you want to connect</summary>
-	std::string target_ip;
+	std::string target_username;
 
-	auth_data(std::string _name, std::string _target_ip) {
+	auth_data(std::string _name, std::string _target_username) {
 		name = _name;
-		target_ip = _target_ip;
+		target_username = _target_username;
 	}
 };
 
@@ -27,7 +27,7 @@ public:
 ///<param name="data">client authentication data</param>
 ///<returns>string handshake</returns>
 const std::string Generate_handshake(auth_data data) {
-	const std::string res = (VERSION + "|" + data.name + "|" + data.target_ip);
+	const std::string res = (VERSION + "|" + data.name + "|" + data.target_username);
 	return res;
 }
 

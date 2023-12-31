@@ -32,9 +32,15 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 		return;
 	}
 
-	std::cout << "Starting messaging with: " << client_data.get_ip() << " - " << client_data.username << "\n";
+	std::cout << "Starting messaging with: " << client_data.reference() << "\n";
 
-	sockets_list.Add_client(client_data);
+	iResult = sockets_list.Add_client(client_data);
+	if (iResult != 0) {
+		std::cout << "Unable to add "<< client_data.reference() << " to SocketsList, with error " << iResult << " - " << SocketsList::ADDING_ERRORS[iResult] << "\n";
+		send(ClientSocket, SocketsList::ADDING_ERRORS[iResult], 0);
+		closesocket(ClientSocket);
+		return;
+	}
 
 	do {
 		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
@@ -47,16 +53,18 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 			}
 		}
 		else if (iResult == 0)
-			std::cout << "Connection closing with " << client_data.get_ip() << " - " << client_data.username << "\n";
+			std::cout << "Connection closing with " << client_data.reference() << "\n";
 		else {
-			std::cout << "message to " << client_data.get_ip() << " - " << client_data.username << " failed with code " << WSAGetLastError() << "\n";
+			std::cout << "message to " << client_data.reference() << " failed with code " << WSAGetLastError() << "\n";
+
+			sockets_list.Remove_client(client_data.username); 
 			closesocket(ClientSocket);
 			return;
 		}
 
 	} while (iResult > 0);
 
-	sockets_list.Remove_client(client_data.get_ip());
+	sockets_list.Remove_client(client_data.username);
 	closesocket(ClientSocket);
 	return;
 }

@@ -6,13 +6,14 @@
 #include <iostream>
 #include <map>
 #include <ws2tcpip.h>
+#include <algorithm>
 
 p2p_socket_data::p2p_socket_data() {
 	socket = INVALID_SOCKET;
 	addr = { 0 };
 	addr_len = (int)sizeof(sockaddr_in);
 
-	target_ip = "";
+	target_username = "";
 	username = "?";
 }
 void p2p_socket_data::load(SOCKET _socket, std::vector<std::string> handshake, sockaddr_in _addr, int _addr_len) {
@@ -21,7 +22,7 @@ void p2p_socket_data::load(SOCKET _socket, std::vector<std::string> handshake, s
 	addr_len = _addr_len;
 
 	username = handshake[1];
-	target_ip = handshake[2];
+	target_username = handshake[2];
 }
 std::string p2p_socket_data::get_ip() {
 	char ip[INET_ADDRSTRLEN];
@@ -30,23 +31,36 @@ std::string p2p_socket_data::get_ip() {
 	}
 	return "";
 }
+std::string p2p_socket_data::reference() {
+	return get_ip() + "-" + username;
+}
+
+
 
 SocketsList::SocketsList() {
-	connections = std::map<std::string, std::vector<p2p_socket_data>>();
+	graph = std::map<std::string, std::vector<p2p_socket_data>>();
+	connections = std::vector<p2p_socket_data>();
 }
-
 SocketsList::~SocketsList() { }
+const std::string SocketsList::ADDING_ERRORS[] = {"ADDING OK", "Username is already taken"};
 
-void SocketsList::Add_client(p2p_socket_data data) {
-	connections[data.target_ip].push_back(data);
+int SocketsList::Add_client(p2p_socket_data data) {
+	for (int i = 0; i < connections.size(); i++) {
+		if (connections[i].username == data.username) {
+			return 1;
+		}
+	}
+
+	graph[data.target_username].push_back(data);
+	connections.push_back(data);
+	return 0;
 }
-void SocketsList::Remove_client(std::string ip) {
-	for (auto e : connections[ip]) {
-		std::string listener_ip = e.get_ip();
+void SocketsList::Remove_client(std::string username) {
+	for (auto e : graph[username]) {
 
-		for (auto it = connections[listener_ip].begin(); it != connections[listener_ip].end(); ) {
-			if (it->get_ip() == ip) {
-				it = connections[listener_ip].erase(it);
+		for (auto it = graph[e.username].begin(); it != graph[e.username].end(); ) {
+			if (it->username == username) {
+				it = graph[e.username].erase(it);
 			}
 			else {
 				++it;
@@ -54,27 +68,34 @@ void SocketsList::Remove_client(std::string ip) {
 		}
 	}
 
-	connections.erase(ip);
+	graph.erase(username);
+
+	for (auto it = connections.begin(); it != connections.end(); ) {
+		if (it->username == username) {
+			it = connections.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
 }
 bool SocketsList::Target_listens(p2p_socket_data data) {
-	std::string sender_ip = data.get_ip();
 	
-	for (auto it = connections[sender_ip].begin(); it != connections[sender_ip].end(); ++it) {
-		if (it->get_ip() == data.target_ip) {
+	for (auto it = graph[data.username].begin(); it != graph[data.username].end(); ++it) {
+		if (it->username == data.target_username) {
 			return true;
 		}
 	}
 	return false;
 }
 p2p_socket_data SocketsList::Get_target(p2p_socket_data	data) {
-	std::string sender_ip = data.get_ip();
 
-	for (auto it = connections[sender_ip].begin(); it != connections[sender_ip].end(); ++it) {
-		if (it->get_ip() == data.target_ip) {
+	for (auto it = graph[data.username].begin(); it != graph[data.username].end(); ++it) {
+		if (it->username == data.target_username) {
 			return *it;
 		}
 	}
-	throw std::invalid_argument("Target is not listening!");
+	throw std::invalid_argument("Exeption in Get_target:: Target is not listening!");
 }
 
 const std::string Handshake_errors[] = {"OK handshake", "Empty handshake", "Socket error during handshake", "Wrong handshake format", "Version mismatch during handshake"};

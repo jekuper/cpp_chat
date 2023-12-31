@@ -12,23 +12,28 @@ public:
 	sockaddr_in addr;
 	int addr_len;
 
-	std::string target_ip;
+	std::string target_username;
 	std::string username;
 
 	p2p_socket_data();
 	void load(SOCKET _socket, std::vector<std::string> handshake, sockaddr_in _addr, int _addr_len);
 	std::string get_ip();
+	std::string reference();
 private:
 };
 
 ///<summary>holds all connections to server and their data</summary>
 class SocketsList {
 public:
-	std::map<std::string, std::vector<p2p_socket_data>> connections;
+	std::map<std::string, std::vector<p2p_socket_data>> graph;
+	std::vector<p2p_socket_data> connections;
+
+	static const std::string ADDING_ERRORS[];
 
 	SocketsList();
 	~SocketsList();
-	void Add_client(p2p_socket_data data);
+	int Add_client(p2p_socket_data data);
+
 	void Remove_client(std::string ip);
 	bool Target_listens(p2p_socket_data data);
 	p2p_socket_data Get_target(p2p_socket_data data);
