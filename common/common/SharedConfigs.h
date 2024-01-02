@@ -20,7 +20,7 @@ namespace shared {
 	///<summary>Checks if essential keyword arguments are valid</summary>
 	///<param name="argk">keyword arguments map</param>
 	///<returns>True if all arguments are valid. False otherwise</returns>
-	bool validate_arguments (std::map<std::string, std::string> argk);
+	bool validate_arguments (std::map<std::string, std::string>& argk);
 	///<summary>Trims string by \r\n\t characters from both ends</summary>
 	///<param name="s">string to trim</param>
 	///<returns>new trimmed string</returns>
