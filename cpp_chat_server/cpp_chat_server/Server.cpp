@@ -61,7 +61,7 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 		else if (iResult == 0)
 			std::cout << "Connection closing with " << client_data->reference() << "\n";
 		else {
-			std::cout << "message from " << client_data->reference() << " failed with code " << WSAGetLastError() << "\n";
+			std::cout << "Message from " << client_data->reference() << " failed with code " << WSAGetLastError() << "\n";
 
 			send(client_data->target_socket, "--Target disconnected.\n", 0);
 

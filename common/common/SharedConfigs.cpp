@@ -23,18 +23,36 @@ namespace shared {
 	}
 	
 	bool validate_arguments(std::map<std::string, std::string> argk) {
-		if (argk["name"].size() == 0) {
-			std::cout << "Username is not provided\nUse --name \"myUserName\"\n";
-			return false;
+		while (argk["name"].size() == 0) {
+			std::cout << "Username is not provided\nPlease type your username: ";
+			std::cin >> argk["name"];
+			trim_str(argk["name"]);
 		}
-		if (argk["target"].size() == 0) {
-			std::cout << "Target Username is not provided\nUse --target \"127.0.0.1\"\n";
-			return false;
+		while (argk["target"].size() == 0) {
+			std::cout << "Target Username is not provided\nPlease type target username:";
+			std::cin >> argk["target"];
+			trim_str(argk["target"]);
 		}
-		if (argk["server"].size() == 0) {
-			std::cout << "Server IP is not provided\nUse --server \"127.0.0.1\"\n";
-			return false;
+		while (argk["server"].size() == 0) {
+			std::cout << "Server IP is not provided\nPlease type Server IP:";
+			std::cin >> argk["server"];
+			trim_str(argk["server"]);
 		}
 		return true;
 	}
+
+	void trim_str(std::string& str) {
+		size_t start = str.find_first_not_of(" \t\n\r");
+
+		if (start == std::string::npos) {
+			return;
+		}
+
+		size_t end = str.find_last_not_of(" \t\n\r");
+
+		str = str.substr(start, end - start + 1);
+
+		return;
+	}
 }
+
