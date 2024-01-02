@@ -22,9 +22,9 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 	int iSendResult;
 	int recvbuflen = DEFAULT_BUFLEN;
 	int iResult = 0;
-	p2p_socket_data client_data = p2p_socket_data();
+	p2p_socket_data new_client_data = p2p_socket_data();
 
-	iResult = Handshake(ClientSocket, client_data, addr, addr_len);
+	iResult = Handshake(ClientSocket, new_client_data, addr, addr_len);
 
 	if (iResult) {
 		std::cout << Handshake_errors[iResult] << "\n  WSA error:" << WSAGetLastError() << "\n";
@@ -32,39 +32,49 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 		return;
 	}
 
-	std::cout << "Starting messaging with: " << client_data.reference() << "\n";
+	std::cout << "Starting messaging with: " << new_client_data.reference() << "\n";
 
-	iResult = sockets_list.Add_client(client_data);
-	if (iResult != 0) {
-		std::cout << "Unable to add "<< client_data.reference() << " to SocketsList, with error " << iResult << " - " << SocketsList::ADDING_ERRORS[iResult] << "\n";
-		send(ClientSocket, SocketsList::ADDING_ERRORS[iResult], 0);
+	iResult = sockets_list.Add_client(new_client_data);
+	if (iResult == 1) {
+		send(ClientSocket, SocketsList::ADDING_ERRORS[iResult] + "\n", 0);
+	}
+	else if (iResult != 0) {
+		std::cout << "Unable to add "<< new_client_data.reference() << " to SocketsList, with error " << iResult << " - " << SocketsList::ADDING_ERRORS[iResult] << "\n";
+		send(ClientSocket, SocketsList::ADDING_ERRORS[iResult] + "\n", 0);
 		closesocket(ClientSocket);
 		return;
 	}
 
+	p2p_socket_data* client_data = sockets_list.Get(ClientSocket);
+	send(client_data->target_socket, "--Target connected.\n", 0);
+
 	do {
 		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0) {
-			if (sockets_list.Target_listens(client_data)) {
-				send_and_handle(sockets_list.Get_target(client_data).socket, recvbuf, iResult, 0);
+			if (client_data->Is_target_listening()) {
+				send_and_handle(client_data->target_socket, recvbuf, iResult, 0);
 			}
 			else {
-				iSendResult = send_and_handle(ClientSocket, "--Target is offline.\n", 0);
+				iSendResult = send_and_handle(ClientSocket, "--Target is not listening.\n", 0);
 			}
 		}
 		else if (iResult == 0)
-			std::cout << "Connection closing with " << client_data.reference() << "\n";
+			std::cout << "Connection closing with " << client_data->reference() << "\n";
 		else {
-			std::cout << "message to " << client_data.reference() << " failed with code " << WSAGetLastError() << "\n";
+			std::cout << "message from " << client_data->reference() << " failed with code " << WSAGetLastError() << "\n";
 
-			sockets_list.Remove_client(client_data.username); 
+			send(client_data->target_socket, "--Target disconnected.\n", 0);
+
+			sockets_list.Remove_client(client_data->socket); 
 			closesocket(ClientSocket);
 			return;
 		}
 
 	} while (iResult > 0);
 
-	sockets_list.Remove_client(client_data.username);
+	send(client_data->target_socket, "--Target disconnected.\n", 0);
+
+	sockets_list.Remove_client(client_data->socket);
 	closesocket(ClientSocket);
 	return;
 }

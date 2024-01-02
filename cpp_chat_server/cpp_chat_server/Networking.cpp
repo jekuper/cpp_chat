@@ -10,6 +10,7 @@
 
 p2p_socket_data::p2p_socket_data() {
 	socket = INVALID_SOCKET;
+	target_socket = INVALID_SOCKET;
 	addr = { 0 };
 	addr_len = (int)sizeof(sockaddr_in);
 
@@ -31,6 +32,9 @@ std::string p2p_socket_data::get_ip() {
 	}
 	return "";
 }
+bool p2p_socket_data::Is_target_listening() {
+	return target_socket != INVALID_SOCKET;
+}
 std::string p2p_socket_data::reference() {
 	return get_ip() + "-" + username;
 }
@@ -38,29 +42,67 @@ std::string p2p_socket_data::reference() {
 
 
 SocketsList::SocketsList() {
-	graph = std::map<std::string, std::vector<p2p_socket_data>>();
-	connections = std::vector<p2p_socket_data>();
+	graph = std::map<SOCKET, std::vector<p2p_socket_data*>>();
+	connections = std::map<SOCKET, p2p_socket_data>();
 }
-SocketsList::~SocketsList() { }
-const std::string SocketsList::ADDING_ERRORS[] = {"ADDING OK", "Username is already taken"};
+SocketsList::SocketsList(const SocketsList& other) {
+	// Perform a deep copy of the data
+	std::lock_guard<std::mutex> lock(other.data_mtx);
+	graph = other.graph;
+	connections = other.connections;
+}
+
+// Copy assignment operator
+SocketsList& SocketsList::operator=(const SocketsList& other) {
+	if (this != &other) { // Avoid self-assignment
+		// Perform a deep copy of the data
+		std::lock(data_mtx, other.data_mtx);  // Lock both mutexes to avoid deadlock
+		std::lock_guard<std::mutex> lockThis(data_mtx, std::adopt_lock);
+		std::lock_guard<std::mutex> lockOther(other.data_mtx, std::adopt_lock);
+
+		graph = other.graph;
+		connections = other.connections;
+	}
+	return *this;
+}
+
+// Destructor
+SocketsList::~SocketsList() {
+	// Destructor automatically releases the mutex
+}
+const std::string SocketsList::ADDING_ERRORS[] = {"ADDING OK", "--Target is not listening"};
 
 int SocketsList::Add_client(p2p_socket_data data) {
-	for (int i = 0; i < connections.size(); i++) {
-		if (connections[i].username == data.username) {
-			return 1;
+	std::lock_guard<std::mutex> lock(data_mtx);
+
+	connections[data.socket] = data;
+	for (const auto& pair : connections) {
+		if (pair.second.username == data.target_username &&
+			pair.second.target_username == data.username && 
+			pair.second.target_socket == INVALID_SOCKET) {
+			graph[pair.second.socket].push_back(&data);
+			graph[data.socket].push_back(&connections[pair.first]);
+
+			connections[data.socket].target_socket = pair.second.socket;
+			connections[pair.first].target_socket = data.socket;
+			
+			return 0;
 		}
 	}
 
-	graph[data.target_username].push_back(data);
-	connections.push_back(data);
-	return 0;
+	return 1;
 }
-void SocketsList::Remove_client(std::string username) {
-	for (auto e : graph[username]) {
+void SocketsList::Remove_client(SOCKET socket) {
+	std::lock_guard<std::mutex> lock(data_mtx);
 
-		for (auto it = graph[e.username].begin(); it != graph[e.username].end(); ) {
-			if (it->username == username) {
-				it = graph[e.username].erase(it);
+	for (auto e : graph[socket]) {
+
+		e->target_socket = INVALID_SOCKET;
+		for (auto it = graph[e->socket].begin(); it != graph[e->socket].end(); ) {
+			p2p_socket_data* e2 = *it;
+
+			if (e2->socket == socket) {
+				it = graph[e->socket].erase(it);
 			}
 			else {
 				++it;
@@ -68,34 +110,11 @@ void SocketsList::Remove_client(std::string username) {
 		}
 	}
 
-	graph.erase(username);
-
-	for (auto it = connections.begin(); it != connections.end(); ) {
-		if (it->username == username) {
-			it = connections.erase(it);
-		}
-		else {
-			++it;
-		}
-	}
+	graph.erase(socket);
+	connections.erase(socket);
 }
-bool SocketsList::Target_listens(p2p_socket_data data) {
-	
-	for (auto it = graph[data.username].begin(); it != graph[data.username].end(); ++it) {
-		if (it->username == data.target_username) {
-			return true;
-		}
-	}
-	return false;
-}
-p2p_socket_data SocketsList::Get_target(p2p_socket_data	data) {
-
-	for (auto it = graph[data.username].begin(); it != graph[data.username].end(); ++it) {
-		if (it->username == data.target_username) {
-			return *it;
-		}
-	}
-	throw std::invalid_argument("Exeption in Get_target:: Target is not listening!");
+p2p_socket_data* SocketsList::Get(SOCKET socket) {
+	return &connections[socket];
 }
 
 const std::string Handshake_errors[] = {"OK handshake", "Empty handshake", "Socket error during handshake", "Wrong handshake format", "Version mismatch during handshake"};

@@ -3,12 +3,14 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <mutex>
 
 ///<summary>holds all data about peer connection</summary>
 class p2p_socket_data {
 public:
 	///<summary>client's socket</summary>
 	SOCKET socket;
+	SOCKET target_socket;
 
 	///<summary>socket address structure</summary>
 	sockaddr_in addr;
@@ -22,6 +24,9 @@ public:
 	p2p_socket_data();
 	void load(SOCKET _socket, std::vector<std::string> handshake, sockaddr_in _addr, int _addr_len);
 	std::string get_ip();
+	///<summary>Checks if target of client listens to client</summary>
+	///<returns>True if listens, False if not</returns>
+	bool Is_target_listening();
 
 	///<summary>get a reference string for this client</summary>
 	///<returns>Returns a concatenation of client's IP & username</returns>
@@ -32,31 +37,31 @@ private:
 ///<summary>holds all connections to server and their data</summary>
 class SocketsList {
 public:
-	///<summary>the graph of users. Element in vector means that this client listens to key client</summary>
-	std::map<std::string, std::vector<p2p_socket_data>> graph;
-	///<summary>hosts all connected users</summary>
-	std::vector<p2p_socket_data> connections;
 
 	///<summary>List of string representation of Adding Errors</summary>
 	static const std::string ADDING_ERRORS[];
 
 	SocketsList();
-	~SocketsList();
+	~SocketsList(); 
+	SocketsList(const SocketsList& other);
+	SocketsList& operator=(const SocketsList& other);
+
 	///<summary>Adds a client to a list and graph</summary>
 	///<param name="data">the client to add</param>
 	///<returns>Returns error code if adding failed</returns>
 	int Add_client(p2p_socket_data data);
 
 	///<summary>Removes a client from a list and graph</summary>
-	///<param name="username">the client's username</param>
-	void Remove_client(std::string username);
-	///<summary>Checks if target of client listens to client</summary>
-	///<returns>True if listens, False if not</returns>
-	bool Target_listens(p2p_socket_data data);
-	///<summary>Gets target of client</summary>
-	///<returns>Target client</returns>
-	p2p_socket_data Get_target(p2p_socket_data data);
+	///<param name="socket">the client's socket</param>
+	void Remove_client(SOCKET socket);
+	p2p_socket_data* Get(SOCKET socket);
 private:
+	///<summary>the graph of users. Element in vector means that this client listens to key client</summary>
+	std::map<SOCKET, std::vector<p2p_socket_data*>> graph;
+	///<summary>hosts all connected users</summary>
+	std::map<SOCKET, p2p_socket_data> connections;
+	///<summary>locks threads during adding and removing</summary>
+	mutable std::mutex data_mtx;
 };
 
 /// <summary> holds associated string description for each handshake error code</summary>
