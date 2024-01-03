@@ -1,7 +1,6 @@
 
 #include <iostream>
 #include <map>
-#include "utils.h"
 #include "Networking.h"
 #include "SharedConfigs.h"
 #ifdef _WIN32
@@ -36,26 +35,30 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 
 	iResult = sockets_list.Add_client(new_client_data);
 	if (iResult == 1) {
-		send(ClientSocket, SocketsList::ADDING_ERRORS[iResult] + "\n", 0);
+		send(ClientSocket, SocketsList::ADDING_ERRORS[iResult] + "\n", 0, &p2p_socket_data());
 	}
 	else if (iResult != 0) {
 		std::cout << "Unable to add "<< new_client_data.reference() << " to SocketsList, with error " << iResult << " - " << SocketsList::ADDING_ERRORS[iResult] << "\n";
-		send(ClientSocket, SocketsList::ADDING_ERRORS[iResult] + "\n", 0);
+		send(ClientSocket, SocketsList::ADDING_ERRORS[iResult] + "\n", 0, &p2p_socket_data());
 		closesocket(ClientSocket);
 		return;
 	}
 
 	p2p_socket_data* client_data = sockets_list.Get(ClientSocket);
-	send(client_data->target_socket, "--Target connected.\n", 0);
+	send(client_data->target_socket, "--Target connected.\n", 0, &p2p_socket_data());
 
 	do {
 		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0) {
 			if (client_data->Is_target_listening()) {
-				send_and_handle(client_data->target_socket, recvbuf, iResult, 0);
+				iSendResult = send_and_handle(client_data->target_socket, std::string(recvbuf, iResult), 0, client_data);
+				if (iSendResult == SOCKET_ERROR)
+					break;
 			}
 			else {
-				iSendResult = send_and_handle(ClientSocket, "--Target is not listening.\n", 0);
+				iSendResult = send_and_handle(ClientSocket, "--Target is not listening.\n", 0, &p2p_socket_data());
+				if (iSendResult == SOCKET_ERROR)
+					break;
 			}
 		}
 		else if (iResult == 0)
@@ -63,7 +66,7 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 		else {
 			std::cout << "Message from " << client_data->reference() << " failed with code " << WSAGetLastError() << "\n";
 
-			send(client_data->target_socket, "--Target disconnected.\n", 0);
+			send(client_data->target_socket, "--Target disconnected.\n", 0, &p2p_socket_data());
 
 			sockets_list.Remove_client(client_data->socket); 
 			closesocket(ClientSocket);
@@ -72,7 +75,7 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 
 	} while (iResult > 0);
 
-	send(client_data->target_socket, "--Target disconnected.\n", 0);
+	send(client_data->target_socket, "--Target disconnected.\n", 0, &p2p_socket_data());
 
 	sockets_list.Remove_client(client_data->socket);
 	closesocket(ClientSocket);

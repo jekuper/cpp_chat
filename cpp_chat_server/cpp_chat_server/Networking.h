@@ -88,22 +88,18 @@ std::string Get_IP(sockaddr_in* addr);
 /// <param name="s">socket for sending</param>
 /// <param name="message">string message</param>
 /// <param name="flags">flags</param>
+/// <param name="data">message sender data</param>
 /// <returns>error code</returns>
-int send(SOCKET s, const std::string message, int flags);
+int send(SOCKET s, const std::string message, int flags, p2p_socket_data* data);
 
 
 /// <summary>Wraper function for sending string over socket. Closes socket on error</summary>
 /// <param name="s">socket for sending</param>
 /// <param name="message">string message</param>
 /// <param name="flags">flags</param>
+/// <param name="data">message sender data</param>
 /// <returns>error code</returns>
-int send_and_handle(SOCKET s, const std::string message, int flags);
+int send_and_handle(SOCKET s, const std::string message, int flags, p2p_socket_data* data);
 
 
-/// <summary>Wraper function for sending string over socket. Closes socket on error</summary>
-/// <param name="s">socket for sending</param>
-/// <param name="message">c-style string message</param>
-/// <param name="len">string length</param>
-/// <param name="flags">flags</param>
-/// <returns>error code</returns>
-int send_and_handle(SOCKET s, const char* message, int len, int flags);
+std::string Get_source(p2p_socket_data* data);
