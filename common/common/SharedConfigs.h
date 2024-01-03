@@ -6,7 +6,7 @@
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "27015"
 
-const std::string VERSION = "0.0.2";
+const std::string VERSION = "0.0.3";
 
 
 ///<summary>Namespace contains funtions for both client and server projects</summary>
