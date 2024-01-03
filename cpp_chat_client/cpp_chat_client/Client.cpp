@@ -95,7 +95,7 @@ int Display (SOCKET Server_socket, CustomConsole::Flags& shared) {
 	char recvbuf[DEFAULT_BUFLEN];
 	int recvbuflen = DEFAULT_BUFLEN;
 
-	shared.console.write("Listening to messages:");
+	shared.console.writeWsource("CLIENT|Listening to messages.");
 
 	do {
 		if (shared.stop)
@@ -107,7 +107,7 @@ int Display (SOCKET Server_socket, CustomConsole::Flags& shared) {
 			return 0;
 
 		if (iResult > 0) {
-			shared.console.write(std::string(recvbuf, iResult));
+			shared.console.writeWsource(std::string(recvbuf, iResult));
 		}
 		else if (iResult == 0) {
 			shared.stop = true;
@@ -144,10 +144,10 @@ int Input(SOCKET Server_socket, CustomConsole::Flags& shared) {
 	return 0;
 }
 
-void Separate_console(SOCKET Server_socket) {
+void Separate_console(SOCKET Server_socket, std::map<std::string, std::string>& argk) {
 	system("cls");
 
-	CustomConsole::Flags shared;
+	CustomConsole::Flags shared(argk["name"]);
 
 	std::thread displayThread(Display, Server_socket, std::ref(shared));
 	Input(Server_socket, shared);
@@ -155,10 +155,7 @@ void Separate_console(SOCKET Server_socket) {
 
 int main(int argc, char* argv[]) {
 	std::map<std::string, std::string> argk = shared::Get_keyword_arguments(argc, argv);
-	if (!shared::validate_arguments(argk)) {
-		system("pause");
-		return 1;
-	}
+	shared::validate_arguments(argk);
 
 	WSADATA wsaData;
 
@@ -188,7 +185,7 @@ int main(int argc, char* argv[]) {
 		return iResult;
 	}
 
-	Separate_console(Server_socket);
+	Separate_console(Server_socket, argk);
 
 	std::cout << "Stopping client...\n";
 

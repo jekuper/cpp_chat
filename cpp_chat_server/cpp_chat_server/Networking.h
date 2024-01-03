@@ -10,25 +10,28 @@ class p2p_socket_data {
 public:
 	///<summary>client's socket</summary>
 	SOCKET socket;
+	///<summary>target's socket. Available ONLY after adding to SocketsList</summary>
 	SOCKET target_socket;
 
 	///<summary>socket address structure</summary>
 	sockaddr_in addr;
 	int addr_len;
 
-	///<summary>username of the target username</summary>
+	///<summary>username of the target</summary>
 	std::string target_username;
 	///<summary>client's username</summary>
 	std::string username;
 
 	p2p_socket_data();
 	void load(SOCKET _socket, std::vector<std::string> handshake, sockaddr_in _addr, int _addr_len);
+	///<summary>Returns client's IP address</summary>
+	///<returns>This client's IP address</returns>
 	std::string get_ip();
-	///<summary>Checks if target of client listens to client</summary>
+	///<summary>Checks if target of this client listens</summary>
 	///<returns>True if listens, False if not</returns>
 	bool Is_target_listening();
 
-	///<summary>get a reference string for this client</summary>
+	///<summary>Gets a reference string for this client</summary>
 	///<returns>Returns a concatenation of client's IP & username</returns>
 	std::string reference();
 private:
@@ -46,21 +49,24 @@ public:
 	SocketsList(const SocketsList& other);
 	SocketsList& operator=(const SocketsList& other);
 
-	///<summary>Adds a client to a list and graph</summary>
-	///<param name="data">the client to add</param>
-	///<returns>Returns error code if adding failed</returns>
+	///<summary>Adds a client to a list and graph. Calculates target_socket for each peer</summary>
+	///<param name="data">The client to add</param>
+	///<returns>Returns error code if adding failed. Error representation avalilable in ADDING_ERRORS</returns>
 	int Add_client(p2p_socket_data data);
 
-	///<summary>Removes a client from a list and graph</summary>
+	///<summary>Removes a client from a list and graph. Recalculates target_socket for remaining</summary>
 	///<param name="socket">the client's socket</param>
 	void Remove_client(SOCKET socket);
+	///<summary>Gets client's data by SOCKET</summary>
+	///<param name="socket">client's socket</param>
+	///<returns>Returns pointer to empty p2p_socket_data if socket doesn't exists. Otherwise returns pointer to actual data</returns>
 	p2p_socket_data* Get(SOCKET socket);
 private:
-	///<summary>the graph of users. Element in vector means that this client listens to key client</summary>
+	///<summary>The graph of users. Element in vector means that this client listens to key client</summary>
 	std::map<SOCKET, std::vector<p2p_socket_data*>> graph;
-	///<summary>hosts all connected users</summary>
+	///<summary>Tracks all connected users</summary>
 	std::map<SOCKET, p2p_socket_data> connections;
-	///<summary>locks threads during adding and removing</summary>
+	///<summary>Locks threads during adding and removing</summary>
 	mutable std::mutex data_mtx;
 };
 
@@ -82,22 +88,18 @@ std::string Get_IP(sockaddr_in* addr);
 /// <param name="s">socket for sending</param>
 /// <param name="message">string message</param>
 /// <param name="flags">flags</param>
+/// <param name="data">message sender data</param>
 /// <returns>error code</returns>
-int send(SOCKET s, const std::string message, int flags);
+int send(SOCKET s, const std::string message, int flags, p2p_socket_data* data);
 
 
-/// <summary>Wraper function for sending string over socket</summary>
+/// <summary>Wraper function for sending string over socket. Closes socket on error</summary>
 /// <param name="s">socket for sending</param>
 /// <param name="message">string message</param>
 /// <param name="flags">flags</param>
+/// <param name="data">message sender data</param>
 /// <returns>error code</returns>
-int send_and_handle(SOCKET s, const std::string message, int flags);
+int send_and_handle(SOCKET s, const std::string message, int flags, p2p_socket_data* data);
 
 
-/// <summary>Wraper function for sending string over socket</summary>
-/// <param name="s">socket for sending</param>
-/// <param name="message">c-style string message</param>
-/// <param name="len">string length</param>
-/// <param name="flags">flags</param>
-/// <returns>error code</returns>
-int send_and_handle(SOCKET s, const char* message, int len, int flags);
+std::string Get_source(p2p_socket_data* data);

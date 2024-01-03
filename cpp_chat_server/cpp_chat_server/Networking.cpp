@@ -1,7 +1,6 @@
 #include "Networking.h"
 #include <vector>
 #include <string>
-#include "utils.h"
 #include "SharedConfigs.h"
 #include <iostream>
 #include <map>
@@ -126,7 +125,7 @@ int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, in
 
 	iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
 	if (iResult > 0) {
-		std::vector<std::string> splitted = split(recvbuf, iResult, '|');
+		std::vector<std::string> splitted = shared::split(recvbuf, iResult, '|');
 
 		if (splitted.size() != 3) {
 			return 3;
@@ -156,19 +155,27 @@ std::string Get_IP (sockaddr_in* addr) {
 }
 
 
-int send (SOCKET s, const std::string message, int flags) {
-	return send(s, message.c_str(), message.size(), flags);
+int send (SOCKET s, const std::string message, int flags, p2p_socket_data* data) {
+	std::string source = Get_source(data);
+
+	std::string result;
+	result = source + "|" + message;
+
+	return send(s, result.c_str(), result.size(), flags);
 }
 
-int send_and_handle(SOCKET s, const std::string message, int flags) {
-	return send_and_handle(s, message.c_str(), message.size(), flags);
-}
+int send_and_handle(SOCKET s, const std::string message, int flags, p2p_socket_data* data) {
+	int iSendResult = send(s, message, flags, data);
 
-int send_and_handle(SOCKET s, const char* message, int len, int flags) {
-	int iSendResult = send(s, message, len, flags);
 	if (iSendResult == SOCKET_ERROR) {
-		std::cout << "send failed: " << WSAGetLastError() << "\n";
+		std::cout << "Send failed: " << WSAGetLastError() << "\n";
 		closesocket(s);
 	}
 	return iSendResult;
+}
+
+std::string Get_source(p2p_socket_data* data) {
+	if (data->socket == INVALID_SOCKET)
+		return "SERVER";
+	return data->username;
 }

@@ -7,6 +7,8 @@
 #include <conio.h>
 #include <windows.h>
 #include <iomanip>
+#include "SharedConfigs.h"
+#include <vector>
 
 namespace CustomConsole {
 
@@ -14,20 +16,21 @@ namespace CustomConsole {
 
 	class Console {
 	private:
-		std::mutex _mtx;
+		mutable std::mutex _mtx;
 		std::string _input;
 		std::string _prompt;
 
 	public:
 		Console();
+		Console(std::string username);
 
 		Console(const Console&) = delete;
-		Console& operator=(const Console&) = delete;
+		Console& operator=(const Console& other);
 
 		std::string read();
-		void write(const char* text, size_t size);
-		void write(const char* text);
-		void write(const std::string& text);
+		void writeWsource(const std::string text);
+		void writeWsource(const char* text, size_t size);
+		void writeWsource(const char* text);
 	};
 
 	struct Flags {
@@ -35,6 +38,9 @@ namespace CustomConsole {
 		Console console;
 
 		Flags() : stop(false) {}
+		Flags(std::string username) : stop(false) {
+			console = Console(username);
+		}
 	};
 }
 
