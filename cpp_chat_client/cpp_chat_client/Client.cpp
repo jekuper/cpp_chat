@@ -155,10 +155,7 @@ void Separate_console(SOCKET Server_socket) {
 
 int main(int argc, char* argv[]) {
 	std::map<std::string, std::string> argk = shared::Get_keyword_arguments(argc, argv);
-	if (!shared::validate_arguments(argk)) {
-		system("pause");
-		return 1;
-	}
+	shared::validate_arguments(argk);
 
 	WSADATA wsaData;
 

@@ -22,7 +22,7 @@ namespace shared {
 		return result;
 	}
 	
-	bool validate_arguments(std::map<std::string, std::string>& argk) {
+	void validate_arguments(std::map<std::string, std::string>& argk) {
 		while (argk["name"].size() == 0) {
 			std::cout << "Username is not provided\nPlease type your username: ";
 			std::cin >> argk["name"];
@@ -38,7 +38,6 @@ namespace shared {
 			std::cin >> argk["server"];
 			trim_str(argk["server"]);
 		}
-		return true;
 	}
 
 	void trim_str(std::string& str) {
