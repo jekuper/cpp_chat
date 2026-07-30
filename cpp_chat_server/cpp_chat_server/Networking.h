@@ -21,6 +21,8 @@ public:
 	std::string target_username;
 	///<summary>client's username</summary>
 	std::string username;
+	///<summary>client's RSA public key, base64</summary>
+	std::string pubkey;
 
 	p2p_socket_data();
 	void load(SOCKET _socket, std::vector<std::string> handshake, sockaddr_in _addr, int _addr_len);
@@ -84,7 +86,10 @@ int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, in
 /// <returns>converted IP. Ex. 127.0.0.1</returns>
 std::string Get_IP(sockaddr_in* addr);
 
-/// <summary>Wraper function for sending string over socket</summary>
+// sends source|message with a newline terminator
+int send_msg(SOCKET s, const std::string& source, const std::string& message);
+
+/// <summary>Wraper function for sending string over socket. Pass nullptr data for SERVER source</summary>
 /// <param name="s">socket for sending</param>
 /// <param name="message">string message</param>
 /// <param name="flags">flags</param>

@@ -3,10 +3,11 @@
 #include <vector>
 #pragma once
 
-#define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT "27015"
+#define DEFAULT_BUFLEN 2048
+// 27015 clashes with apple mobile device service and source games
+#define DEFAULT_PORT "28715"
 
-const std::string VERSION = "0.0.3";
+const std::string VERSION = "0.0.4";
 
 
 ///<summary>Namespace contains funtions for both client and server projects</summary>

@@ -32,7 +32,7 @@ The client application accepts the following command-line arguments:
 After building the solution, you can run the client with the specified command-line arguments. Here's an example:
 
 ```bash
-cpp_chat_client.exe --name Alice --target 192.168.1.2 --server 192.168.1.1
+cpp_chat_client.exe --name Alice --target Bob --server 192.168.1.1
 ```
 Replace ``cpp_chat_client.exe`` with the actual name of your client executable.
 

@@ -6,7 +6,6 @@
 #ifdef _WIN32
 #include <Winsock2.h>
 #include <thread>
-#include <vector>
 #include <ws2tcpip.h>
 
 #endif
@@ -18,7 +17,7 @@ SocketsList sockets_list = SocketsList();
 
 void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 	char recvbuf[DEFAULT_BUFLEN];
-	int iSendResult;
+	int iSendResult = 0;
 	int recvbuflen = DEFAULT_BUFLEN;
 	int iResult = 0;
 	p2p_socket_data new_client_data = p2p_socket_data();
@@ -35,47 +34,63 @@ void Messaging(SOCKET ClientSocket, sockaddr_in addr, int addr_len) {
 
 	iResult = sockets_list.Add_client(new_client_data);
 	if (iResult == 1) {
-		send(ClientSocket, SocketsList::ADDING_ERRORS[iResult] + "\n", 0, &p2p_socket_data());
+		send(ClientSocket, SocketsList::ADDING_ERRORS[iResult], 0, nullptr);
 	}
 	else if (iResult != 0) {
 		std::cout << "Unable to add "<< new_client_data.reference() << " to SocketsList, with error " << iResult << " - " << SocketsList::ADDING_ERRORS[iResult] << "\n";
-		send(ClientSocket, SocketsList::ADDING_ERRORS[iResult] + "\n", 0, &p2p_socket_data());
+		send(ClientSocket, SocketsList::ADDING_ERRORS[iResult], 0, nullptr);
 		closesocket(ClientSocket);
 		return;
 	}
 
 	p2p_socket_data* client_data = sockets_list.Get(ClientSocket);
-	send(client_data->target_socket, "--Target connected.\n", 0, &p2p_socket_data());
 
+	if (client_data->Is_target_listening()) {
+		p2p_socket_data* target_data = sockets_list.Get(client_data->target_socket);
+
+		// swap public keys so the two can encrypt for each other
+		send_msg(client_data->socket, "KEY", target_data->pubkey);
+		send_msg(target_data->socket, "KEY", client_data->pubkey);
+
+		send(client_data->socket, "--Target connected.", 0, nullptr);
+		send(target_data->socket, "--Target connected.", 0, nullptr);
+	}
+
+	std::string pending;
 	do {
 		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0) {
-			if (client_data->Is_target_listening()) {
-				iSendResult = send_and_handle(client_data->target_socket, std::string(recvbuf, iResult), 0, client_data);
+			pending.append(recvbuf, iResult);
+
+			// messages are newline separated, tcp can glue or split them
+			size_t pos;
+			while ((pos = pending.find('\n')) != std::string::npos) {
+				std::string line = pending.substr(0, pos);
+				pending.erase(0, pos + 1);
+				if (line.empty())
+					continue;
+
+				if (client_data->Is_target_listening()) {
+					iSendResult = send_and_handle(client_data->target_socket, line, 0, client_data);
+				}
+				else {
+					iSendResult = send_and_handle(ClientSocket, "--Target is not listening.", 0, nullptr);
+				}
 				if (iSendResult == SOCKET_ERROR)
 					break;
 			}
-			else {
-				iSendResult = send_and_handle(ClientSocket, "--Target is not listening.\n", 0, &p2p_socket_data());
-				if (iSendResult == SOCKET_ERROR)
-					break;
-			}
+			if (iSendResult == SOCKET_ERROR)
+				break;
 		}
 		else if (iResult == 0)
 			std::cout << "Connection closing with " << client_data->reference() << "\n";
-		else {
+		else
 			std::cout << "Message from " << client_data->reference() << " failed with code " << WSAGetLastError() << "\n";
-
-			send(client_data->target_socket, "--Target disconnected.\n", 0, &p2p_socket_data());
-
-			sockets_list.Remove_client(client_data->socket); 
-			closesocket(ClientSocket);
-			return;
-		}
 
 	} while (iResult > 0);
 
-	send(client_data->target_socket, "--Target disconnected.\n", 0, &p2p_socket_data());
+	if (client_data->Is_target_listening())
+		send(client_data->target_socket, "--Target disconnected.", 0, nullptr);
 
 	sockets_list.Remove_client(client_data->socket);
 	closesocket(ClientSocket);
@@ -155,8 +170,6 @@ int main()
 	SOCKET ClientSocket;
 	ClientSocket = INVALID_SOCKET;
 
-	//TODO: implement deletion from threads array
-	std::vector<std::thread> threads;
 	while (true) {
 		sockaddr_in addr = { 0 };
 		int addrlen = (int)sizeof(sockaddr_in);
@@ -169,7 +182,8 @@ int main()
 
 		std::cout << "Established connection to " << Get_IP(&addr) << ". Waiting for handshake...\n";
 
-		threads.push_back(std::thread(Messaging, ClientSocket, addr, addrlen));
+		// detached, cleans up after itself
+		std::thread(Messaging, ClientSocket, addr, addrlen).detach();
 	}
 
 	std::cout << "Closing server...\n";

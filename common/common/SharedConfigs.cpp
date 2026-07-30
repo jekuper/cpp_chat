@@ -9,7 +9,10 @@ namespace shared {
 		std::map<std::string, std::string> result;
 		for (int i = 0; i < argc; i++) {
 			if (strlen(argv[i]) > 0 && argv[i][0] == '-') {
-				std::string val = (i + 1 < argc ? argv[i + 1] : "");
+				// next arg is the value, unless it is another flag
+				std::string val = "";
+				if (i + 1 < argc && argv[i + 1][0] != '-')
+					val = argv[i + 1];
 				
 				size_t pos = 0;
 				while (argv[i][pos] == '-') {
@@ -24,14 +27,14 @@ namespace shared {
 	}
 	
 	void validate_arguments(std::map<std::string, std::string>& argk) {
-		while (argk["name"].size() == 0) {
-			std::cout << "Username is not provided\nPlease type your username: ";
+		while (argk["name"].size() == 0 || argk["name"].find('|') != std::string::npos) {
+			std::cout << "Username is missing or has a | in it\nPlease type your username: ";
 			std::cin >> argk["name"];
 			trim_str(argk["name"]);
 			system("cls");
 		}
-		while (argk["target"].size() == 0) {
-			std::cout << "Target Username is not provided\nPlease type target username:";
+		while (argk["target"].size() == 0 || argk["target"].find('|') != std::string::npos) {
+			std::cout << "Target username is missing or has a | in it\nPlease type target username:";
 			std::cin >> argk["target"];
 			trim_str(argk["target"]);
 			system("cls");
