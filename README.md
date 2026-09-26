@@ -8,9 +8,10 @@ This is a simple client-server chat application written in C++ that operates in 
 
 - **P2P chatting:** Clients can connect to a server and communicate with one other specified client.
 
+- **RSA Encryption:** Messages are end-to-end encrypted with RSA-2048. Clients exchange public keys through the server and the server only ever sees ciphertext.
+
 - **Future Features:**
   - **Rooms Handling:** Support for group chats to facilitate communication among multiple users simultaneously.
-  - **RSA Encryption:** Implementation of RSA encryption for secure communication.
   - **Linux Version:** Adaptation of the application to run on Linux platforms.
   - **Graphical User Interface (GUI):** A graphical interface for a more user-friendly experience.
 

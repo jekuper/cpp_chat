@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <mutex>
+#include <atomic>
 #include <string>
 #include <conio.h>
 #include <windows.h>
@@ -28,13 +29,14 @@ namespace CustomConsole {
 		Console& operator=(const Console& other);
 
 		std::string read();
+		void write(const std::string& source, const std::string& text);
 		void writeWsource(const std::string text);
 		void writeWsource(const char* text, size_t size);
 		void writeWsource(const char* text);
 	};
 
 	struct Flags {
-		bool stop;
+		std::atomic<bool> stop;
 		Console console;
 
 		Flags() : stop(false) {}

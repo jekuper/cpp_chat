@@ -23,6 +23,7 @@ void p2p_socket_data::load(SOCKET _socket, std::vector<std::string> handshake, s
 
 	username = handshake[1];
 	target_username = handshake[2];
+	pubkey = handshake[3];
 }
 std::string p2p_socket_data::get_ip() {
 	char ip[INET_ADDRSTRLEN];
@@ -75,16 +76,19 @@ int SocketsList::Add_client(p2p_socket_data data) {
 	std::lock_guard<std::mutex> lock(data_mtx);
 
 	connections[data.socket] = data;
-	for (const auto& pair : connections) {
-		if (pair.second.username == data.target_username &&
-			pair.second.target_username == data.username && 
+	// point into the map, not at the local copy
+	p2p_socket_data* self = &connections[data.socket];
+	for (auto& pair : connections) {
+		if (pair.first != data.socket &&
+			pair.second.username == data.target_username &&
+			pair.second.target_username == data.username &&
 			pair.second.target_socket == INVALID_SOCKET) {
-			graph[pair.second.socket].push_back(&data);
-			graph[data.socket].push_back(&connections[pair.first]);
+			graph[pair.first].push_back(self);
+			graph[data.socket].push_back(&pair.second);
 
-			connections[data.socket].target_socket = pair.second.socket;
-			connections[pair.first].target_socket = data.socket;
-			
+			self->target_socket = pair.first;
+			pair.second.target_socket = data.socket;
+
 			return 0;
 		}
 	}
@@ -113,13 +117,13 @@ void SocketsList::Remove_client(SOCKET socket) {
 	connections.erase(socket);
 }
 p2p_socket_data* SocketsList::Get(SOCKET socket) {
+	std::lock_guard<std::mutex> lock(data_mtx);
 	return &connections[socket];
 }
 
 const std::string Handshake_errors[] = {"OK handshake", "Empty handshake", "Socket error during handshake", "Wrong handshake format", "Version mismatch during handshake"};
 int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, int addr_len) {
 	char recvbuf[DEFAULT_BUFLEN];
-	int iSendResult;
 	int recvbuflen = DEFAULT_BUFLEN;
 	int iResult = 0;
 
@@ -127,7 +131,7 @@ int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, in
 	if (iResult > 0) {
 		std::vector<std::string> splitted = shared::split(recvbuf, iResult, '|');
 
-		if (splitted.size() != 3) {
+		if (splitted.size() != 4) {
 			return 3;
 		}
 		if (splitted[0] != VERSION) {
@@ -140,9 +144,7 @@ int Handshake(SOCKET ClientSocket, p2p_socket_data& result, sockaddr_in addr, in
 	}
 	else if (iResult == 0)
 		return 1;
-	else if (iResult == SOCKET_ERROR) {
-		return 2;
-	}
+	return 2;
 }
 std::string Get_IP (sockaddr_in* addr) {
 	char ip[INET_ADDRSTRLEN];
@@ -155,13 +157,16 @@ std::string Get_IP (sockaddr_in* addr) {
 }
 
 
+int send_msg(SOCKET s, const std::string& source, const std::string& message) {
+	std::string result = source + "|" + message;
+	if (result.back() != '\n')
+		result += '\n';
+
+	return send(s, result.c_str(), (int)result.size(), 0);
+}
+
 int send (SOCKET s, const std::string message, int flags, p2p_socket_data* data) {
-	std::string source = Get_source(data);
-
-	std::string result;
-	result = source + "|" + message;
-
-	return send(s, result.c_str(), result.size(), flags);
+	return send_msg(s, Get_source(data), message);
 }
 
 int send_and_handle(SOCKET s, const std::string message, int flags, p2p_socket_data* data) {
@@ -175,7 +180,7 @@ int send_and_handle(SOCKET s, const std::string message, int flags, p2p_socket_d
 }
 
 std::string Get_source(p2p_socket_data* data) {
-	if (data->socket == INVALID_SOCKET)
+	if (data == nullptr || data->socket == INVALID_SOCKET)
 		return "SERVER";
 	return data->username;
 }

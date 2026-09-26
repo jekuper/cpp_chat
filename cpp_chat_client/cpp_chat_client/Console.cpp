@@ -90,14 +90,16 @@ namespace CustomConsole {
 		}
 	}
 	void Console::writeWsource(const std::string message) {
-		std::vector<std::string> splitted = shared::split(message.c_str(), message.size(), '|');
-		if (splitted.size() < 2) {
+		// only split on the first |, the text itself may contain more
+		size_t sep = message.find('|');
+		if (sep == std::string::npos) {
 			std::cerr << "Failed printing: message doesn't have source\n";
 			return;
 		}
-		std::string source = splitted[0];
-		std::string text = splitted[1];
+		write(message.substr(0, sep), message.substr(sep + 1));
+	}
 
+	void Console::write(const std::string& source, const std::string& text) {
 		size_t len = text.size();
 		if (!len)
 			return;
