@@ -15,6 +15,22 @@ This is a simple client-server chat application written in C++ that operates in 
   - **Linux Version:** Adaptation of the application to run on Linux platforms.
   - **Graphical User Interface (GUI):** A graphical interface for a more user-friendly experience.
 
+## Screenshots
+
+The server relaying a conversation between two clients, Alice and Bob:
+
+**Server**
+
+![Server accepting two clients](docs/screenshots/server.png)
+
+**Alice** (`--name Alice --target Bob`)
+
+![Alice's client](docs/screenshots/client_alice.png)
+
+**Bob** (`--name Bob --target Alice`)
+
+![Bob's client](docs/screenshots/client_bob.png)
+
 ## Prerequisites
 
 - **Windows Operating System:** The application is currently developed for Windows using the Winsock2 library.
